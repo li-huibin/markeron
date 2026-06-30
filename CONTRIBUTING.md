@@ -72,3 +72,19 @@ src-tauri/              # Rust backend
 2. Make your changes with appropriate tests
 3. Ensure `npm test`, `npm run lint`, and `npx vue-tsc --noEmit` pass
 4. Submit a PR with a clear description
+
+## Releasing
+
+**Do not release manually.** Use the automated script:
+
+```bash
+npm run release:check          # optional pre-flight (same checks as CI)
+npm run release patch --dry-run # preview without changes
+npm run release patch           # patch | minor | major
+```
+
+This bumps all version files, commits, tags, pushes, and triggers the GitHub Actions Release workflow. Release notes are generated automatically from Conventional Commits (see `.github/release.yml`).
+
+Requirements: clean `master` branch, `gh` CLI logged in, Rust + Node installed.
+
+See `.cursor/skills/release/SKILL.md` for the full workflow.
