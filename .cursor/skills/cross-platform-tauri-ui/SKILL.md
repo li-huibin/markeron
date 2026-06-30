@@ -76,11 +76,7 @@ All cross-platform UI colors live in **`src/style.css`** as named classes with *
 | `ui-divider-h/v/b`, `ui-kbd`, `ui-select`, `ui-popover`, `ui-segment*` | Shared controls |
 | `color-swatch-ring*`, `color-picker-ring`, `color-dot-ring` | Color UI |
 
-### Mac-only contrast boost
-
-`src/main.ts` adds `platform-macos` on `<html>` when `isMacOS()`.
-
-Use **`html.platform-macos .overlay-*`** overrides only when explicit rgba matches Windows but Mac overlay text still needs higher opacity. Settings window uses same rgba on both platforms.
+All platforms use the same `rgba()` values — do not add Mac-only text opacity overrides.
 
 ---
 
@@ -97,7 +93,7 @@ Use **`html.platform-macos .overlay-*`** overrides only when explicit rgba match
 
 1. Confirm the component uses Tailwind opacity → migrate to semantic class.
 2. If borders: use `ui-divider-*` or `settings-card` patterns.
-3. If text in overlay still weak on Mac: add `html.platform-macos` override, not global bump.
+3. Use explicit `rgba()` at the same values on all platforms — do not add Mac-only opacity bumps.
 4. Verify Windows unchanged (rgba values match original Tailwind intent).
 
 ### Pre-commit grep
@@ -151,6 +147,5 @@ Zero hits in `src/components` is the target for new work.
 ## Related files
 
 - `src/style.css` — all semantic UI classes
-- `src/main.ts` — `platform-macos` class
 - `src-tauri/src/macos.rs` — settings window background & title bar
 - `index.html` — `html.settings` for settings route

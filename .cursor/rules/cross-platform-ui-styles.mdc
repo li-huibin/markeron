@@ -27,8 +27,7 @@ Solid utilities (`text-white`, `bg-[#1e1e20]`, `text-accent`) are safe.
    - Settings: `settings-text-*`, `settings-nav-item*`, `settings-toggle-*`, `settings-card`, `ui-divider-*`
    - Overlay panels: `overlay-panel`, `overlay-text-*`, `overlay-tool-btn*`, `ui-kbd`, `color-swatch-ring`
 3. **New styles**: add reusable class in `style.css` with explicit `rgba()` — do not inline Tailwind opacity in components.
-4. **Mac-only tweaks**: use `html.platform-macos` in CSS only when Windows already looks correct and Mac needs a boost (overlay text).
-5. **Transparent windows**: keep `overlay-panel-surface`; set window background via Tauri (`macos.rs`), not only CSS.
+4. **Transparent windows**: keep `overlay-panel-surface`; set window background via Tauri (`macos.rs`), not only CSS.
 
 ## Before commit (frontend UI changes)
 
