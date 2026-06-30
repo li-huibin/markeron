@@ -14,10 +14,10 @@
   "homepage": "https://github.com/ifer47/markeron#readme",
   "private": true,
   "engines": {
-    "node": "20.20.2",
-    "npm": "10.8.2"
+    "node": "24.15.0",
+    "npm": "11.12.1"
   },
-  "packageManager": "npm@10.8.2",
+  "packageManager": "npm@11.12.1",
   "keywords": [
     "markeron",
     "screen-annotation",

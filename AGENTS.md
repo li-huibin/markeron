@@ -5,7 +5,7 @@ Index for AI agents and contributors. Prefer these docs over guessing project co
 ## Quick start
 
 ```bash
-nvm use          # Node 20.20.2, npm 10.8.2
+nvm use          # Node 24.15.0, npm 11.12.1
 npm install
 npm run dev      # Tauri + frontend
 ```
