@@ -21,6 +21,7 @@ import {
   type ToolbarVisibility,
 } from '../utils/toolbarSettings'
 import { resolveDefaultEntryMode, shouldClearWhiteboardOnEntry, type DefaultEntryMode } from '../utils/entryMode'
+import { resolveEraserMode, type EraserMode } from '../utils/eraserMode'
 import { useI18n } from '../i18n'
 
 const { t } = useI18n()
@@ -155,6 +156,7 @@ const {
   currentColor,
   lineWidth,
   setAngleSnapStep,
+  setEraserMode,
   isDrawing,
   startDraw,
   draw,
@@ -201,6 +203,10 @@ function applyToolbarFromConfig(general?: AppConfig['general']) {
 
 function applyDefaultEntryFromConfig(general?: AppConfig['general']) {
   defaultEntryMode.value = resolveDefaultEntryMode(general)
+}
+
+function applyEraserModeFromConfig(general?: AppConfig['general']) {
+  setEraserMode(resolveEraserMode(general))
 }
 
 function applyDefaultEntryOnActivate() {
@@ -354,6 +360,7 @@ function applyDragModeFromConfig(general?: AppConfig['general']) {
 }
 
 function canStartElementDrag(e: PointerEvent): boolean {
+  if (currentTool.value === 'eraser') return false
   return canStartElementDragGate({
     dragMode: dragMode.value,
     hasHoveredElement: !!hoveredActionInfo.value,
@@ -647,6 +654,7 @@ onMounted(async () => {
     applyDragModeFromConfig(cfg.general)
     applyToolbarFromConfig(cfg.general)
     applyDefaultEntryFromConfig(cfg.general)
+    applyEraserModeFromConfig(cfg.general)
     preserveDrawings.value = cfg.general?.preserveDrawings ?? false
     whiteboardPreserveDrawings.value = cfg.general?.whiteboardPreserveDrawings ?? true
     setAngleSnapStep((cfg.general?.angleSnapStep as 15 | 30 | 45 | undefined) ?? 15)
@@ -660,6 +668,7 @@ onMounted(async () => {
       applyDragModeFromConfig(event.payload.general)
       applyToolbarFromConfig(event.payload.general)
       applyDefaultEntryFromConfig(event.payload.general)
+      applyEraserModeFromConfig(event.payload.general)
       preserveDrawings.value = event.payload.general?.preserveDrawings ?? false
       whiteboardPreserveDrawings.value = event.payload.general?.whiteboardPreserveDrawings ?? true
       setAngleSnapStep((event.payload.general?.angleSnapStep as 15 | 30 | 45 | undefined) ?? 15)

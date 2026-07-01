@@ -46,6 +46,15 @@ pub enum ToolbarLayout {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub enum EraserMode {
+    #[serde(rename = "stroke")]
+    #[default]
+    Stroke,
+    #[serde(rename = "object")]
+    Object,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum DefaultEntryMode {
     #[serde(rename = "screen")]
     #[default]
@@ -76,6 +85,8 @@ pub struct GeneralConfig {
     pub toolbar_layout: ToolbarLayout,
     #[serde(default, rename = "defaultEntryMode")]
     pub default_entry_mode: DefaultEntryMode,
+    #[serde(default, rename = "eraserMode")]
+    pub eraser_mode: EraserMode,
 }
 
 impl Default for GeneralConfig {
@@ -91,6 +102,7 @@ impl Default for GeneralConfig {
             toolbar_visibility: ToolbarVisibility::Space,
             toolbar_layout: ToolbarLayout::Detailed,
             default_entry_mode: DefaultEntryMode::Screen,
+            eraser_mode: EraserMode::Stroke,
         }
     }
 }
@@ -136,6 +148,9 @@ impl GeneralConfig {
             DefaultEntryMode::Screen | DefaultEntryMode::Whiteboard
         ) {
             self.default_entry_mode = DefaultEntryMode::Screen;
+        }
+        if !matches!(self.eraser_mode, EraserMode::Stroke | EraserMode::Object) {
+            self.eraser_mode = EraserMode::Stroke;
         }
         self
     }
@@ -458,6 +473,27 @@ mod tests {
     fn general_config_defaults_default_entry_mode() {
         let general = GeneralConfig::default();
         assert_eq!(general.default_entry_mode, DefaultEntryMode::Screen);
+    }
+
+    #[test]
+    fn config_deserializes_eraser_mode() {
+        let json = r#"{
+            "shortcuts": {
+                "toggleDrawing": "Ctrl+Shift+D",
+                "clearDrawing": "Ctrl+Shift+C"
+            },
+            "general": {
+                "eraserMode": "object"
+            }
+        }"#;
+        let config: AppConfig = serde_json::from_str(json).unwrap();
+        assert_eq!(config.general.eraser_mode, EraserMode::Object);
+    }
+
+    #[test]
+    fn general_config_defaults_eraser_mode() {
+        let general = GeneralConfig::default();
+        assert_eq!(general.eraser_mode, EraserMode::Stroke);
     }
 
     #[test]

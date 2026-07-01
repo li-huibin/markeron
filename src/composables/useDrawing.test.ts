@@ -387,6 +387,27 @@ describe('useDrawing', () => {
       // Undo the original stroke
       drawing.undo()
     })
+
+    it('object eraser removes whole elements in one stroke', () => {
+      drawing.setEraserMode('object')
+      drawing.currentTool.value = 'pen'
+      drawing.startDraw({ x: 10, y: 10 })
+      drawing.draw({ x: 50, y: 50 })
+      drawing.endDraw()
+      expect(drawing.canClear.value).toBe(true)
+
+      drawing.currentTool.value = 'eraser'
+      drawing.startDraw({ x: 30, y: 30 })
+      drawing.draw({ x: 34, y: 34 })
+      expect(drawing.canClear.value).toBe(false)
+
+      drawing.endDraw()
+      expect(drawing.canClear.value).toBe(false)
+
+      drawing.undo()
+      expect(drawing.canClear.value).toBe(true)
+      drawing.setEraserMode('stroke')
+    })
   })
 
   describe('removeAction', () => {

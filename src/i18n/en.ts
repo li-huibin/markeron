@@ -16,7 +16,7 @@ export default {
     rect: 'Rectangle outline',
     ellipse: 'Ellipse outline',
     line: 'Straight line segment',
-    eraser: 'Real-time erasing',
+    eraser: 'Stroke mode erases along the path; switch to object mode in General → Eraser mode',
     text: 'Double-click to place, scroll to resize',
   },
   colors: {
@@ -121,6 +121,11 @@ export default {
     defaultEntryModeWhiteboard: 'Whiteboard',
     defaultEntryModeDesc:
       'Choose whether annotation mode starts on the screen overlay or directly in whiteboard mode. Press W anytime to switch.',
+    eraserMode: 'Eraser mode',
+    eraserModeStroke: 'Stroke',
+    eraserModeObject: 'Object',
+    eraserModeDesc:
+      'Stroke: erase pixels along the drag path (undoable). Object: delete entire shapes or text when you pass over them (undoable).',
   },
   toolbar: {
     undo: 'Undo',
@@ -168,6 +173,7 @@ export default {
       'In Settings → General → Whiteboard & content, choose whether pressing W preserves content. When off, each W entry starts with a clean canvas.',
     whiteboardContentHint:
       'General → Whiteboard & content: default entry (screen / whiteboard), keep after exit (restore on re-enter), keep on W toggle (preserve when switching modes without exiting).',
+    eraserModeHint: 'General → Eraser mode: stroke (local erase) or object (delete whole elements when passing over).',
     editAndOther: 'Edit & Other',
     settingsPanel: 'Toolbar (Space to toggle)',
     toolbarOptionsHint:

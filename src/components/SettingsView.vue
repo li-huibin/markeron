@@ -12,6 +12,7 @@ import {
   type ToolbarVisibility,
 } from '../utils/toolbarSettings'
 import { resolveDefaultEntryMode, type DefaultEntryMode } from '../utils/entryMode'
+import { resolveEraserMode, type EraserMode } from '../utils/eraserMode'
 import { isMacOS } from '../utils/platform'
 import { useI18n, syncLocaleFromConfig } from '../i18n'
 import GeneralTab from './settings/GeneralTab.vue'
@@ -156,6 +157,7 @@ const dragMode = ref<DragMode>('off')
 const toolbarVisibility = ref<ToolbarVisibility>('space')
 const toolbarLayout = ref<ToolbarLayout>('detailed')
 const defaultEntryMode = ref<DefaultEntryMode>('screen')
+const eraserMode = ref<EraserMode>('stroke')
 const preserveDrawings = ref(false)
 const whiteboardPreserveDrawings = ref(true)
 const angleSnapStep = ref<15 | 30 | 45>(15)
@@ -169,6 +171,7 @@ onMounted(async () => {
   toolbarVisibility.value = resolveToolbarVisibility(cfg.general)
   toolbarLayout.value = resolveToolbarLayout(cfg.general)
   defaultEntryMode.value = resolveDefaultEntryMode(cfg.general)
+  eraserMode.value = resolveEraserMode(cfg.general)
   preserveDrawings.value = cfg.general?.preserveDrawings ?? false
   whiteboardPreserveDrawings.value = cfg.general?.whiteboardPreserveDrawings ?? true
   angleSnapStep.value = (cfg.general?.angleSnapStep as 15 | 30 | 45 | undefined) ?? 15
@@ -379,6 +382,7 @@ onUnmounted(() => {
         :toolbar-visibility="toolbarVisibility"
         :toolbar-layout="toolbarLayout"
         :default-entry-mode="defaultEntryMode"
+        :eraser-mode="eraserMode"
         :preserve-drawings="preserveDrawings"
         :whiteboard-preserve-drawings="whiteboardPreserveDrawings"
         :auto-start-enabled="autoStartEnabled"
@@ -387,6 +391,7 @@ onUnmounted(() => {
         @update:toolbar-visibility="toolbarVisibility = $event"
         @update:toolbar-layout="toolbarLayout = $event"
         @update:default-entry-mode="defaultEntryMode = $event"
+        @update:eraser-mode="eraserMode = $event"
         @update:preserve-drawings="preserveDrawings = $event"
         @update:whiteboard-preserve-drawings="whiteboardPreserveDrawings = $event"
         @update:auto-start-enabled="autoStartEnabled = $event"
@@ -471,6 +476,9 @@ onUnmounted(() => {
                   ><kbd class="help-kbd">7</kbd><span class="ml-2.5">{{ t('tools.eraser') }}</span></span
                 >
                 <span class="help-desc">{{ t('toolDesc.eraser') }}</span>
+              </div>
+              <div class="help-row help-row-block">
+                <span class="help-desc">{{ t('help.eraserModeHint') }}</span>
               </div>
               <div class="help-row">
                 <span class="help-label"

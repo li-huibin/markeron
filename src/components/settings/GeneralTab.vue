@@ -9,6 +9,8 @@ import type { ToolbarLayout, ToolbarVisibility } from '../../utils/toolbarSettin
 import { TOOLBAR_LAYOUT_OPTIONS, TOOLBAR_VISIBILITY_OPTIONS } from '../../utils/toolbarSettings'
 import type { DefaultEntryMode } from '../../utils/entryMode'
 import { DEFAULT_ENTRY_MODE_OPTIONS } from '../../utils/entryMode'
+import type { EraserMode } from '../../utils/eraserMode'
+import { ERASER_MODE_OPTIONS } from '../../utils/eraserMode'
 import { useI18n } from '../../i18n'
 import { isMacOS } from '../../utils/platform'
 
@@ -27,6 +29,7 @@ const dragModeOptions = DRAG_MODE_OPTIONS
 const toolbarVisibilityOptions = TOOLBAR_VISIBILITY_OPTIONS
 const toolbarLayoutOptions = TOOLBAR_LAYOUT_OPTIONS
 const defaultEntryModeOptions = DEFAULT_ENTRY_MODE_OPTIONS
+const eraserModeOptions = ERASER_MODE_OPTIONS
 const modKeyLabel = computed(() => (isMacOS() ? 'Command' : 'Ctrl'))
 
 const dragModeDescKey = computed(() => {
@@ -45,6 +48,7 @@ const props = defineProps<{
   toolbarVisibility: ToolbarVisibility
   toolbarLayout: ToolbarLayout
   defaultEntryMode: DefaultEntryMode
+  eraserMode: EraserMode
   preserveDrawings: boolean
   whiteboardPreserveDrawings: boolean
   autoStartEnabled: boolean
@@ -56,6 +60,7 @@ const emit = defineEmits<{
   'update:toolbarVisibility': [value: ToolbarVisibility]
   'update:toolbarLayout': [value: ToolbarLayout]
   'update:defaultEntryMode': [value: DefaultEntryMode]
+  'update:eraserMode': [value: EraserMode]
   'update:preserveDrawings': [value: boolean]
   'update:whiteboardPreserveDrawings': [value: boolean]
   'update:autoStartEnabled': [value: boolean]
@@ -170,6 +175,29 @@ async function setToolbarLayout(layout: ToolbarLayout) {
     await invoke('save_general', { general: cfg.general })
   } catch (error) {
     console.error('Failed to save toolbar layout:', error)
+  }
+}
+
+async function setEraserMode(mode: EraserMode) {
+  if (mode === props.eraserMode) return
+  emit('update:eraserMode', mode)
+  try {
+    const cfg = await invoke<AppConfig>('get_config')
+    if (!cfg.general)
+      cfg.general = {
+        dragMode: props.dragMode,
+        toolbarVisibility: props.toolbarVisibility,
+        toolbarLayout: props.toolbarLayout,
+        defaultEntryMode: props.defaultEntryMode,
+        eraserMode: mode,
+        preserveDrawings: false,
+        whiteboardPreserveDrawings: true,
+        angleSnapStep: props.angleSnapStep,
+      }
+    cfg.general.eraserMode = mode
+    await invoke('save_general', { general: cfg.general })
+  } catch (error) {
+    console.error('Failed to save eraser mode:', error)
   }
 }
 
@@ -409,6 +437,25 @@ async function toggleAngleSnapStep(step: (typeof snapStepOptions)[number]) {
           </div>
         </div>
         <p class="settings-card-desc">{{ t('settings.angleSnapStepDesc') }}</p>
+      </div>
+
+      <div class="settings-card">
+        <div class="settings-card-row">
+          <span class="text-[12.5px] settings-text-label">{{ t('settings.eraserMode') }}</span>
+          <div class="flex items-center gap-1 shrink-0 flex-wrap justify-end max-w-[62%]">
+            <button
+              v-for="mode in eraserModeOptions"
+              :key="mode"
+              class="px-2 py-[4px] rounded-md ui-segment text-[10.5px] leading-none transition-colors duration-120 whitespace-nowrap"
+              :class="{ 'ui-segment--active': eraserMode === mode }"
+              :aria-pressed="eraserMode === mode"
+              @click="setEraserMode(mode)"
+            >
+              {{ t(`settings.eraserMode${mode === 'stroke' ? 'Stroke' : 'Object'}`) }}
+            </button>
+          </div>
+        </div>
+        <p class="settings-card-desc">{{ t('settings.eraserModeDesc') }}</p>
       </div>
 
       <div class="settings-card">

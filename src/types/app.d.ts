@@ -18,12 +18,14 @@ export interface AppConfig {
     toolbarVisibility?: ToolbarVisibility
     toolbarLayout?: ToolbarLayout
     defaultEntryMode?: DefaultEntryMode
+    eraserMode?: EraserMode
   }
 }
 
 export type ToolbarVisibility = 'space' | 'always'
 export type ToolbarLayout = 'simple' | 'detailed'
 export type DefaultEntryMode = 'screen' | 'whiteboard'
+export type EraserMode = 'stroke' | 'object'
 
 export interface SaveResult {
   ok: boolean

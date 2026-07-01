@@ -16,7 +16,7 @@ export default {
     rect: '矩形边框',
     ellipse: '椭圆边框',
     line: '直线段',
-    eraser: '实时擦除，效果跟随拖拽',
+    eraser: '轨迹擦除：沿路径局部擦除；可在「常规 → 橡皮擦模式」切换对象擦除',
     text: '双击放置，滚轮调字号',
   },
   colors: {
@@ -117,6 +117,10 @@ export default {
     defaultEntryModeScreen: '屏幕标注',
     defaultEntryModeWhiteboard: '白板',
     defaultEntryModeDesc: '选择进入标注时默认显示屏幕叠加还是直接进入白板；随时可按 W 切换。',
+    eraserMode: '橡皮擦模式',
+    eraserModeStroke: '轨迹擦除',
+    eraserModeObject: '对象擦除',
+    eraserModeDesc: '轨迹擦除：按路径局部擦除像素（可撤销）。对象擦除：划过图形或文字时删除整个元素（可撤销）。',
   },
   toolbar: {
     undo: '撤销',
@@ -163,6 +167,7 @@ export default {
       '可在「常规 → 白板与内容」中控制按 W 切换时是否保留内容；关闭后每次按 W 进入白板均为空白画布。',
     whiteboardContentHint:
       '「常规 → 白板与内容」：默认进入（屏幕标注 / 白板）、退出标注后保留（再次进入恢复上次内容）、按 W 切换时保留（标注模式内切换屏幕/白板时不重置）。',
+    eraserModeHint: '「常规 → 橡皮擦模式」可选轨迹擦除（局部）或对象擦除（划过删除整段元素）。',
     editAndOther: '编辑与其他',
     settingsPanel: '工具栏（Space 呼出）',
     toolbarOptionsHint:

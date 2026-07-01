@@ -1,4 +1,5 @@
 import { ref, shallowRef, computed, type Ref } from 'vue'
+import type { EraserMode } from '../utils/eraserMode'
 import {
   computeBbox,
   bboxesIntersect,
@@ -45,6 +46,15 @@ export function useDrawing(
   const lineWidth = ref(3)
   const isDrawing = ref(false)
   const angleSnapStep = ref<15 | 30 | 45>(15)
+  const eraserMode = ref<EraserMode>('stroke')
+
+  function setEraserMode(mode: EraserMode) {
+    eraserMode.value = mode
+  }
+
+  let objectEraserBatch: { action: DrawAction; index: number }[] = []
+  let objectEraserRemovedSet = new Set<DrawAction>()
+  let objectEraserLastProcessedPt = 0
 
   function setAngleSnapStep(step: number) {
     angleSnapStep.value = step === 30 || step === 45 ? step : 15
@@ -67,6 +77,7 @@ export function useDrawing(
         type: 'erase'
         targets: { action: DrawAction; before: DrawAction['attachedErasers']; after: DrawAction['attachedErasers'] }[]
       }
+    | { type: 'removeBatch'; removed: { action: DrawAction; index: number }[] }
     | { type: 'clear'; actions: DrawAction[]; prevUndoStack: UndoEntry[] }
 
   function takeDragSnapshot(action: DrawAction, index: number): DragSnapshot {
@@ -407,7 +418,7 @@ export function useDrawing(
     if (cacheCanvas) ctx.drawImage(cacheCanvas, 0, 0)
 
     const action = currentAction.value
-    if (action && action.tool === 'eraser' && action.points.length > 0) {
+    if (action && action.tool === 'eraser' && eraserMode.value === 'stroke' && action.points.length > 0) {
       const dpr = getEffectiveDpr()
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       drawActionDirect(ctx, action, pathCache)
@@ -530,6 +541,26 @@ export function useDrawing(
     flushRender()
   }
 
+  function processObjectEraserHits(action: DrawAction) {
+    const pts = action.points
+    let removedAny = false
+    for (let i = objectEraserLastProcessedPt; i < pts.length; i++) {
+      const hit = findActionAt(pts[i])
+      if (!hit || objectEraserRemovedSet.has(hit.action)) continue
+      objectEraserRemovedSet.add(hit.action)
+      const idx = history.indexOf(hit.action)
+      if (idx === -1) continue
+      objectEraserBatch.push({ action: hit.action, index: idx })
+      history.splice(idx, 1)
+      historyIndexDirty = true
+      deleteActionFromHitGrid(hit.action)
+      removedAny = true
+    }
+    objectEraserLastProcessedPt = pts.length
+    if (removedAny) markHistoryStacksChanged()
+    invalidateCache()
+  }
+
   function startDraw(point: Point) {
     if (currentTool.value === 'text') return
     isDrawing.value = true
@@ -552,7 +583,15 @@ export function useDrawing(
       points: [point],
     }
     previewDirty = true
-    if (currentTool.value === 'eraser') historyDirty = true
+    if (currentTool.value === 'eraser') {
+      if (eraserMode.value === 'object') {
+        objectEraserBatch = []
+        objectEraserRemovedSet = new Set()
+        objectEraserLastProcessedPt = 0
+      } else {
+        historyDirty = true
+      }
+    }
     scheduleRender()
   }
 
@@ -591,6 +630,8 @@ export function useDrawing(
       if (!appended) return
       if (action.tool === 'pen') {
         bakeIncrementalStroke(action)
+      } else if (action.tool === 'eraser' && eraserMode.value === 'object') {
+        processObjectEraserHits(action)
       }
     } else {
       const point = points[points.length - 1]
@@ -622,7 +663,7 @@ export function useDrawing(
     }
 
     previewDirty = true
-    if (action.tool === 'eraser') historyDirty = true
+    if (action.tool === 'eraser' && eraserMode.value === 'stroke') historyDirty = true
     scheduleRender()
   }
 
@@ -637,6 +678,24 @@ export function useDrawing(
     updateShapeHitCache(action)
 
     clearStrokeCanvas()
+
+    if (action.tool === 'eraser' && eraserMode.value === 'object') {
+      if (objectEraserLastProcessedPt < action.points.length) {
+        processObjectEraserHits(action)
+      }
+      currentAction.value = null
+      previewDirty = true
+      if (objectEraserBatch.length > 0) {
+        undoStack.push({ type: 'removeBatch', removed: [...objectEraserBatch] })
+        redoStack.length = 0
+        markHistoryStacksChanged()
+      }
+      objectEraserBatch = []
+      objectEraserRemovedSet = new Set()
+      objectEraserLastProcessedPt = 0
+      flushRender()
+      return
+    }
 
     if (action.tool === 'eraser') {
       if (action.bbox) {
@@ -917,6 +976,13 @@ export function useDrawing(
         t.action.attachedErasers = t.before ? [...t.before] : undefined
         pathCache.delete(t.action)
       }
+    } else if (entry.type === 'removeBatch') {
+      const sorted = [...entry.removed].sort((a, b) => a.index - b.index)
+      for (const item of sorted) {
+        history.splice(item.index, 0, item.action)
+        appendActionToHitGrid(item.action)
+      }
+      historyIndexDirty = true
     } else if (entry.type === 'clear') {
       history.push(...entry.actions)
       undoStack.push(...entry.prevUndoStack)
@@ -957,6 +1023,16 @@ export function useDrawing(
         t.action.attachedErasers = t.after ? [...t.after] : undefined
         pathCache.delete(t.action)
       }
+    } else if (entry.type === 'removeBatch') {
+      const sorted = [...entry.removed].sort((a, b) => b.index - a.index)
+      for (const item of sorted) {
+        const idx = history.indexOf(item.action)
+        if (idx !== -1) {
+          history.splice(idx, 1)
+          deleteActionFromHitGrid(item.action)
+        }
+      }
+      historyIndexDirty = true
     } else if (entry.type === 'clear') {
       entry.actions = [...history]
       entry.prevUndoStack = [...undoStack]
@@ -1104,6 +1180,7 @@ export function useDrawing(
     currentColor,
     lineWidth,
     angleSnapStep,
+    setEraserMode,
     isDrawing,
     startDraw,
     draw,
