@@ -564,6 +564,9 @@ onUnmounted(() => {
                 <div class="help-keys"><kbd class="help-kbd">Esc</kbd></div>
               </div>
               <div class="help-row help-row-block">
+                <span class="help-desc">{{ t('help.whiteboardContentHint') }}</span>
+              </div>
+              <div class="help-row help-row-block">
                 <span class="help-desc">{{ t('help.whiteboardPreserveHint') }}</span>
               </div>
             </div>

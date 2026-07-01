@@ -38,8 +38,8 @@
 - **8 tools** — pen, highlighter, arrow, rectangle, ellipse, line, eraser, text
 - **Flexible toolbar** — press <kbd>Space</kbd> to toggle, or enable **always-on** in Settings; simple or detailed layout with undo, copy, and whiteboard actions in-panel
 - **Full keyboard control** — every action has a shortcut, no menus needed
-- **Preserve drawings** — optionally keep annotations in memory after exiting, so you can resume where you left off
-- **Whiteboard mode** — press <kbd>W</kbd> to switch into a clean whiteboard workspace; whether drawings are preserved when toggling is configurable in Settings
+- **Preserve drawings** — enable **Keep after exit** under Whiteboard & content to resume on re-enter
+- **Whiteboard mode** — set default entry to whiteboard, or press <kbd>W</kbd> to toggle; content rules are in **Whiteboard & content** settings
 - **Whiteboard copy** — copy the whiteboard as an image with <kbd>Ctrl</kbd>/<kbd>Command</kbd> + <kbd>C</kbd>
 
 <table>
@@ -126,7 +126,7 @@ On **macOS**, use <kbd>Command</kbd> (⌘) in place of <kbd>Ctrl</kbd>, and <kbd
 | :--- | :--- |
 | <kbd>W</kbd> | Toggle whiteboard mode |
 | <kbd>Ctrl</kbd> + <kbd>C</kbd> / <kbd>Command</kbd> + <kbd>C</kbd> | Copy the current whiteboard as an image |
-| Settings | Control whether toggling whiteboard preserves the current drawings |
+| Settings | **General → Whiteboard & content**: default entry, keep after exit, keep on <kbd>W</kbd> toggle |
 
 #### Other
 
@@ -140,10 +140,11 @@ On **macOS**, use <kbd>Command</kbd> (⌘) in place of <kbd>Ctrl</kbd>, and <kbd
 
 ## Settings
 
-- **Preserve drawings on exit** — keep annotations in memory after exiting annotation mode
-- **Preserve whiteboard drawings on W toggle** — keep the current whiteboard content when pressing <kbd>W</kbd> to enter or exit whiteboard mode
-- **Element dragging** — off, hover to drag, or hold Ctrl/Command to drag (General settings)
-- **Angle snap step** — choose the snap interval used while drawing straight lines with <kbd>Alt</kbd>
+- **Toolbar display** — press <kbd>Space</kbd> to toggle, or always-on (Space does nothing when pinned)
+- **Toolbar layout** — simple (expand with **More**) or detailed
+- **Whiteboard & content** — default entry (screen / whiteboard), keep after exit, keep on <kbd>W</kbd> toggle
+- **Element dragging** — off, hover to drag, or hold <kbd>Ctrl</kbd>/<kbd>Command</kbd> to drag
+- **Angle snap step** — snap interval for straight lines drawn with <kbd>Alt</kbd>
 - **Auto start** — launch the app automatically at system startup
 
 ## Development

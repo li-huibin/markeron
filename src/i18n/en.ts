@@ -137,7 +137,7 @@ export default {
     basicDesc1:
       'After launching, the app runs silently in the <strong class="text-white/70">system tray</strong>. Press the global shortcut to enter annotation mode.',
     basicDesc2:
-      'Annotations cover the full screen (including taskbar). Press <kbd class="help-kbd">Esc</kbd> to exit and clear all annotations.',
+      'Annotations cover the full screen (including taskbar). Press <kbd class="help-kbd">Esc</kbd> to exit; drawings are cleared by default — enable **Keep after exit** under General → Whiteboard & content to resume later.',
     globalShortcuts: 'Global Shortcuts',
     thAction: 'Action',
     thWindows: 'Windows',
@@ -166,6 +166,8 @@ export default {
     exitWhiteboard: 'Exit whiteboard mode',
     whiteboardPreserveHint:
       'In Settings → General → Whiteboard & content, choose whether pressing W preserves content. When off, each W entry starts with a clean canvas.',
+    whiteboardContentHint:
+      'General → Whiteboard & content: default entry (screen / whiteboard), keep after exit (restore on re-enter), keep on W toggle (preserve when switching modes without exiting).',
     editAndOther: 'Edit & Other',
     settingsPanel: 'Toolbar (Space to toggle)',
     toolbarOptionsHint:

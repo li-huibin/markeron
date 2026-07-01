@@ -131,7 +131,8 @@ export default {
   help: {
     basicUsage: '基本用法',
     basicDesc1: '启动后应用静默运行在<strong class="text-white/70">系统托盘</strong>，按下全局快捷键即可进入标注模式。',
-    basicDesc2: '标注覆盖全屏（含任务栏），按 <kbd class="help-kbd">Esc</kbd> 退出并自动清除所有标注。',
+    basicDesc2:
+      '标注覆盖全屏（含任务栏）。按 <kbd class="help-kbd">Esc</kbd> 退出标注；默认清除内容，可在「常规 → 白板与内容」中开启退出后保留。',
     globalShortcuts: '全局快捷键',
     thAction: '功能',
     thWindows: 'Windows',
@@ -160,6 +161,8 @@ export default {
     exitWhiteboard: '退出白板模式',
     whiteboardPreserveHint:
       '可在「常规 → 白板与内容」中控制按 W 切换时是否保留内容；关闭后每次按 W 进入白板均为空白画布。',
+    whiteboardContentHint:
+      '「常规 → 白板与内容」：默认进入（屏幕标注 / 白板）、退出标注后保留（再次进入恢复上次内容）、按 W 切换时保留（标注模式内切换屏幕/白板时不重置）。',
     editAndOther: '编辑与其他',
     settingsPanel: '工具栏（Space 呼出）',
     toolbarOptionsHint:
