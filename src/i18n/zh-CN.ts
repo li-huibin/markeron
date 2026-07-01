@@ -120,7 +120,8 @@ export default {
     eraserMode: '橡皮擦模式',
     eraserModeStroke: '轨迹擦除',
     eraserModeObject: '对象擦除',
-    eraserModeDesc: '轨迹擦除：按路径局部擦除像素（可撤销）。对象擦除：划过图形或文字时删除整个元素（可撤销）。',
+    eraserModeDesc:
+      '轨迹擦除：按路径局部擦除像素（可撤销）。对象擦除：划过图形或文字时删除整个元素（可撤销）。使用橡皮擦时不会触发元素拖拽，即使已开启悬停拖动。',
   },
   toolbar: {
     undo: '撤销',
@@ -167,7 +168,8 @@ export default {
       '可在「常规 → 白板与内容」中控制按 W 切换时是否保留内容；关闭后每次按 W 进入白板均为空白画布。',
     whiteboardContentHint:
       '「常规 → 白板与内容」：默认进入（屏幕标注 / 白板）、退出标注后保留（再次进入恢复上次内容）、按 W 切换时保留（标注模式内切换屏幕/白板时不重置）。',
-    eraserModeHint: '「常规 → 橡皮擦模式」可选轨迹擦除（局部）或对象擦除（划过删除整段元素）。',
+    eraserModeHint:
+      '「常规 → 橡皮擦模式」可选轨迹擦除（局部）或对象擦除（划过删除整段元素）。使用橡皮擦（7）时不会触发元素拖拽，即使已开启悬停拖动。',
     editAndOther: '编辑与其他',
     settingsPanel: '工具栏（Space 呼出）',
     toolbarOptionsHint:
@@ -179,7 +181,8 @@ export default {
     clearAllAnnotation: '清除全部标注',
     exitAnnotation: '退出标注模式',
     dragAndText: '拖拽与文字',
-    dragDesc: '在「常规」设置中选择元素拖拽方式：关闭、悬停拖动，或按住 Ctrl/Command 才拖动。',
+    dragDesc:
+      '在「常规」设置中选择元素拖拽方式：关闭、悬停拖动，或按住 Ctrl/Command 才拖动。选中橡皮擦工具时不触发拖拽。',
     editTextDesc: '双击已有文字重新进入编辑模式；<kbd class="help-kbd">T</kbd> 模式下双击空白处新建文字。',
     confirmTextDesc: '<kbd class="help-kbd">Ctrl+Enter</kbd>（macOS 为 <kbd class="help-kbd">⌘+Return</kbd>）。',
     dragElement: '拖拽元素',

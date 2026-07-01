@@ -125,7 +125,7 @@ export default {
     eraserModeStroke: 'Stroke',
     eraserModeObject: 'Object',
     eraserModeDesc:
-      'Stroke: erase pixels along the drag path (undoable). Object: delete entire shapes or text when you pass over them (undoable).',
+      'Stroke: erase pixels along the drag path (undoable). Object: delete entire shapes or text when you pass over them (undoable). Element dragging is disabled while the eraser is selected, even with hover drag on.',
   },
   toolbar: {
     undo: 'Undo',
@@ -173,7 +173,8 @@ export default {
       'In Settings → General → Whiteboard & content, choose whether pressing W preserves content. When off, each W entry starts with a clean canvas.',
     whiteboardContentHint:
       'General → Whiteboard & content: default entry (screen / whiteboard), keep after exit (restore on re-enter), keep on W toggle (preserve when switching modes without exiting).',
-    eraserModeHint: 'General → Eraser mode: stroke (local erase) or object (delete whole elements when passing over).',
+    eraserModeHint:
+      'General → Eraser mode: stroke (local erase) or object (delete whole elements when passing over). Element dragging is disabled while the eraser (7) is selected, even with hover drag on.',
     editAndOther: 'Edit & Other',
     settingsPanel: 'Toolbar (Space to toggle)',
     toolbarOptionsHint:
@@ -186,7 +187,7 @@ export default {
     exitAnnotation: 'Exit annotation',
     dragAndText: 'Drag & Text',
     dragDesc:
-      'Choose how to move existing elements in General settings: off, hover to drag, or hold Ctrl/Command to drag.',
+      'Choose how to move existing elements in General settings: off, hover to drag, or hold Ctrl/Command to drag. Dragging is disabled while the eraser tool is selected.',
     editTextDesc:
       'Double-click existing text to re-edit; in <kbd class="help-kbd">T</kbd> mode, double-click empty area to create new text.',
     confirmTextDesc: '<kbd class="help-kbd">Ctrl+Enter</kbd> (macOS: <kbd class="help-kbd">⌘+Return</kbd>).',

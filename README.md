@@ -143,8 +143,8 @@ On **macOS**, use <kbd>Command</kbd> (⌘) in place of <kbd>Ctrl</kbd>, and <kbd
 - **Toolbar display** — press <kbd>Space</kbd> to toggle, or always-on (Space does nothing when pinned)
 - **Toolbar layout** — simple (expand with **More**) or detailed
 - **Whiteboard & content** — default entry (screen / whiteboard), keep after exit, keep on <kbd>W</kbd> toggle
-- **Element dragging** — off, hover to drag, or hold <kbd>Ctrl</kbd>/<kbd>Command</kbd> to drag
-- **Eraser mode** — stroke (local erase) or object (delete whole elements when passing over)
+- **Element dragging** — off, hover to drag, or hold <kbd>Ctrl</kbd>/<kbd>Command</kbd> to drag (disabled while eraser is selected)
+- **Eraser mode** — stroke (local erase) or object (delete whole elements when passing over); eraser tool disables element dragging
 - **Angle snap step** — snap interval for straight lines drawn with <kbd>Alt</kbd>
 - **Auto start** — launch the app automatically at system startup
 
