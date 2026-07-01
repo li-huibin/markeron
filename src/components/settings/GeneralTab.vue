@@ -160,7 +160,7 @@ async function toggleAngleSnapStep(step: (typeof snapStepOptions)[number]) {
     <h2 class="text-[14px] font-semibold settings-text-title mb-4">{{ t('settings.generalTitle') }}</h2>
 
     <div class="flex flex-col gap-2">
-      <div class="settings-card">
+      <div class="settings-card settings-card--popover-host" :class="{ 'relative z-20': localeOpen }">
         <div class="settings-card-row">
           <span class="text-[12.5px] settings-text-label">{{ t('settings.language') }}</span>
           <div ref="localeDropdownRef" class="relative">
