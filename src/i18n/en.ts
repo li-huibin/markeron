@@ -95,12 +95,15 @@ export default {
     dragModeDescOff: 'Drawings cannot be moved in annotation mode.',
     dragModeDescHover: 'Hover over an element and drag to move it.',
     dragModeDescModifier: 'Hold {modKey} and drag to move. Draw freely over elements without the modifier.',
-    preserveDrawings: 'Preserve drawings on exit',
+    preserveDrawings: 'Keep after exit',
     preserveDrawingsDesc:
       'When enabled, annotations are kept in memory after exiting annotation mode. Re-entering will restore your previous drawings.',
-    whiteboardPreserveDrawings: 'Preserve whiteboard drawings on W toggle',
+    whiteboardPreserveDrawings: 'Keep on W toggle',
     whiteboardPreserveDrawingsDesc:
       'When enabled, pressing W to enter or exit whiteboard mode keeps the existing whiteboard content. Turn this off to start whiteboard mode with a clean canvas each time.',
+    whiteboardSection: 'Whiteboard & content',
+    whiteboardSectionDesc:
+      'Default entry chooses screen overlay or whiteboard. Keep after exit restores your last session when you re-enter. Keep on W toggle preserves drawings when switching modes without exiting; turn off to start with a blank whiteboard each time you press W.',
     angleSnapStep: 'Angle snap step',
     angleSnapStepDesc: 'Choose how far straight lines snap while holding Alt.',
     toolbarVisibility: 'Toolbar display',
@@ -113,6 +116,11 @@ export default {
     toolbarLayoutDetailed: 'Detailed',
     toolbarLayoutDesc:
       'Simple shows compact tools and colors with a More button for full options. Detailed shows the full tool panel.',
+    defaultEntryMode: 'Default entry',
+    defaultEntryModeScreen: 'Screen',
+    defaultEntryModeWhiteboard: 'Whiteboard',
+    defaultEntryModeDesc:
+      'Choose whether annotation mode starts on the screen overlay or directly in whiteboard mode. Press W anytime to switch.',
   },
   toolbar: {
     undo: 'Undo',
@@ -157,7 +165,7 @@ export default {
     copyWhiteboard: 'Copy whiteboard to clipboard',
     exitWhiteboard: 'Exit whiteboard mode',
     whiteboardPreserveHint:
-      'In General settings, choose whether pressing W preserves the current whiteboard content. When off, each entry starts with a clean canvas.',
+      'In Settings → General → Whiteboard & content, choose whether pressing W preserves content. When off, each W entry starts with a clean canvas.',
     editAndOther: 'Edit & Other',
     settingsPanel: 'Toolbar (Space to toggle)',
     toolbarOptionsHint:

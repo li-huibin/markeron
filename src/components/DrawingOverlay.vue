@@ -20,6 +20,7 @@ import {
   type ToolbarLayout,
   type ToolbarVisibility,
 } from '../utils/toolbarSettings'
+import { resolveDefaultEntryMode, shouldClearWhiteboardOnEntry, type DefaultEntryMode } from '../utils/entryMode'
 import { useI18n } from '../i18n'
 
 const { t } = useI18n()
@@ -60,6 +61,7 @@ watch(toolbarShown, (shown) => {
 const mousePos = ref({ x: 0, y: 0 })
 const textBoxPos = ref<{ x: number; y: number } | null>(null)
 const whiteboardMode = ref(false)
+const defaultEntryMode = ref<DefaultEntryMode>('screen')
 
 const toolLabelMap = computed<Record<Tool, string>>(() => ({
   pen: t('tools.pen'),
@@ -197,14 +199,33 @@ function applyToolbarFromConfig(general?: AppConfig['general']) {
   }
 }
 
+function applyDefaultEntryFromConfig(general?: AppConfig['general']) {
+  defaultEntryMode.value = resolveDefaultEntryMode(general)
+}
+
+function applyDefaultEntryOnActivate() {
+  if (defaultEntryMode.value === 'whiteboard') {
+    enterWhiteboardMode({ fromDefaultEntry: true })
+  } else {
+    whiteboardMode.value = false
+  }
+}
+
 function toggleToolbarPopupVisible() {
   if (toolbarPinned.value) return
   setToolbarPopupVisible(!showToolbarPopup.value)
 }
 
-function enterWhiteboardMode() {
+function enterWhiteboardMode(options?: { fromDefaultEntry?: boolean }) {
   if (whiteboardMode.value) return
-  if (!whiteboardPreserveDrawings.value) {
+  if (
+    shouldClearWhiteboardOnEntry({
+      whiteboardPreserveDrawings: whiteboardPreserveDrawings.value,
+      preserveDrawings: preserveDrawings.value,
+      fromDefaultEntry: options?.fromDefaultEntry ?? false,
+      hasDrawings: canClear.value,
+    })
+  ) {
     hardReset()
   }
   whiteboardMode.value = true
@@ -625,6 +646,7 @@ onMounted(async () => {
     const cfg = await invoke<AppConfig>('get_config')
     applyDragModeFromConfig(cfg.general)
     applyToolbarFromConfig(cfg.general)
+    applyDefaultEntryFromConfig(cfg.general)
     preserveDrawings.value = cfg.general?.preserveDrawings ?? false
     whiteboardPreserveDrawings.value = cfg.general?.whiteboardPreserveDrawings ?? true
     setAngleSnapStep((cfg.general?.angleSnapStep as 15 | 30 | 45 | undefined) ?? 15)
@@ -637,6 +659,7 @@ onMounted(async () => {
     await listen<AppConfig>('config-changed', (event) => {
       applyDragModeFromConfig(event.payload.general)
       applyToolbarFromConfig(event.payload.general)
+      applyDefaultEntryFromConfig(event.payload.general)
       preserveDrawings.value = event.payload.general?.preserveDrawings ?? false
       whiteboardPreserveDrawings.value = event.payload.general?.whiteboardPreserveDrawings ?? true
       setAngleSnapStep((event.payload.general?.angleSnapStep as 15 | 30 | 45 | undefined) ?? 15)
@@ -658,9 +681,7 @@ onMounted(async () => {
       }
       if (isActive) {
         currentTool.value = 'pen'
-        if (whiteboardMode.value && !whiteboardPreserveDrawings.value) {
-          hardReset()
-        }
+        applyDefaultEntryOnActivate()
         nextTick(() => resizeCanvas())
       }
     }),
@@ -1012,7 +1033,8 @@ function exitDrawing() {
     </Transition>
 
     <ToolToolbar
-      v-if="toolbarShown"
+      v-if="toolbarVisible"
+      v-show="!hideUiForCapture"
       ref="toolbarRef"
       :layout="toolbarLayout"
       :pinned="toolbarPinned"

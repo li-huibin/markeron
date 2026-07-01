@@ -94,11 +94,14 @@ export default {
     dragModeDescOff: '标注中无法拖动已有图形。',
     dragModeDescHover: '悬停在图形上拖动即可移动。',
     dragModeDescModifier: '需按住 {modKey} 并拖动才能移动，不按修饰键时可继续在图形上绘制。',
-    preserveDrawings: '退出后保留标注',
+    preserveDrawings: '退出标注后保留',
     preserveDrawingsDesc: '开启后，退出标注模式时不会清除已有标注，下次进入将恢复上次的绘制内容。',
-    whiteboardPreserveDrawings: '按 W 切换时保留白板内容',
+    whiteboardPreserveDrawings: '按 W 切换时保留',
     whiteboardPreserveDrawingsDesc:
       '开启后，按 W 进入或退出白板模式时会保留当前白板内容；关闭后，每次切换白板都会从空白画布开始。',
+    whiteboardSection: '白板与内容',
+    whiteboardSectionDesc:
+      '默认进入选择屏幕叠加或白底画布。退出标注后保留：再次进入时恢复上次内容。按 W 切换时保留：在标注模式内切换屏幕/白板时不重置画布；关闭后每次按 W 进入白板均为空白画布。',
     angleSnapStep: '吸附角度步进',
     angleSnapStepDesc: '按住 Alt 绘制直线时，选择吸附到的角度间隔。',
     toolbarVisibility: '工具栏显示',
@@ -110,6 +113,10 @@ export default {
     toolbarLayoutSimple: '简约',
     toolbarLayoutDetailed: '详细',
     toolbarLayoutDesc: '简约模式显示紧凑工具与颜色，可通过「更多」展开完整选项；详细模式直接显示完整工具面板。',
+    defaultEntryMode: '默认进入',
+    defaultEntryModeScreen: '屏幕标注',
+    defaultEntryModeWhiteboard: '白板',
+    defaultEntryModeDesc: '选择进入标注时默认显示屏幕叠加还是直接进入白板；随时可按 W 切换。',
   },
   toolbar: {
     undo: '撤销',
@@ -151,7 +158,8 @@ export default {
     toggleWhiteboard: '进入 / 退出白板',
     copyWhiteboard: '复制白板到剪贴板',
     exitWhiteboard: '退出白板模式',
-    whiteboardPreserveHint: '可在「常规」设置中控制按 W 切换时是否保留白板内容；关闭后每次进入白板均为空白画布。',
+    whiteboardPreserveHint:
+      '可在「常规 → 白板与内容」中控制按 W 切换时是否保留内容；关闭后每次按 W 进入白板均为空白画布。',
     editAndOther: '编辑与其他',
     settingsPanel: '工具栏（Space 呼出）',
     toolbarOptionsHint:

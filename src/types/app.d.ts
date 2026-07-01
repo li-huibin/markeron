@@ -17,11 +17,13 @@ export interface AppConfig {
     angleSnapStep?: 15 | 30 | 45
     toolbarVisibility?: ToolbarVisibility
     toolbarLayout?: ToolbarLayout
+    defaultEntryMode?: DefaultEntryMode
   }
 }
 
 export type ToolbarVisibility = 'space' | 'always'
 export type ToolbarLayout = 'simple' | 'detailed'
+export type DefaultEntryMode = 'screen' | 'whiteboard'
 
 export interface SaveResult {
   ok: boolean

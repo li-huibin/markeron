@@ -7,6 +7,8 @@ import type { DragMode } from '../../utils/dragMode'
 import { DRAG_MODE_OPTIONS } from '../../utils/dragMode'
 import type { ToolbarLayout, ToolbarVisibility } from '../../utils/toolbarSettings'
 import { TOOLBAR_LAYOUT_OPTIONS, TOOLBAR_VISIBILITY_OPTIONS } from '../../utils/toolbarSettings'
+import type { DefaultEntryMode } from '../../utils/entryMode'
+import { DEFAULT_ENTRY_MODE_OPTIONS } from '../../utils/entryMode'
 import { useI18n } from '../../i18n'
 import { isMacOS } from '../../utils/platform'
 
@@ -24,6 +26,7 @@ const snapStepOptions = [15, 30, 45] as const
 const dragModeOptions = DRAG_MODE_OPTIONS
 const toolbarVisibilityOptions = TOOLBAR_VISIBILITY_OPTIONS
 const toolbarLayoutOptions = TOOLBAR_LAYOUT_OPTIONS
+const defaultEntryModeOptions = DEFAULT_ENTRY_MODE_OPTIONS
 const modKeyLabel = computed(() => (isMacOS() ? 'Command' : 'Ctrl'))
 
 const dragModeDescKey = computed(() => {
@@ -41,6 +44,7 @@ const props = defineProps<{
   dragMode: DragMode
   toolbarVisibility: ToolbarVisibility
   toolbarLayout: ToolbarLayout
+  defaultEntryMode: DefaultEntryMode
   preserveDrawings: boolean
   whiteboardPreserveDrawings: boolean
   autoStartEnabled: boolean
@@ -51,6 +55,7 @@ const emit = defineEmits<{
   'update:dragMode': [value: DragMode]
   'update:toolbarVisibility': [value: ToolbarVisibility]
   'update:toolbarLayout': [value: ToolbarLayout]
+  'update:defaultEntryMode': [value: DefaultEntryMode]
   'update:preserveDrawings': [value: boolean]
   'update:whiteboardPreserveDrawings': [value: boolean]
   'update:autoStartEnabled': [value: boolean]
@@ -165,6 +170,28 @@ async function setToolbarLayout(layout: ToolbarLayout) {
     await invoke('save_general', { general: cfg.general })
   } catch (error) {
     console.error('Failed to save toolbar layout:', error)
+  }
+}
+
+async function setDefaultEntryMode(mode: DefaultEntryMode) {
+  if (mode === props.defaultEntryMode) return
+  emit('update:defaultEntryMode', mode)
+  try {
+    const cfg = await invoke<AppConfig>('get_config')
+    if (!cfg.general)
+      cfg.general = {
+        dragMode: props.dragMode,
+        toolbarVisibility: props.toolbarVisibility,
+        toolbarLayout: props.toolbarLayout,
+        defaultEntryMode: mode,
+        preserveDrawings: false,
+        whiteboardPreserveDrawings: true,
+        angleSnapStep: props.angleSnapStep,
+      }
+    cfg.general.defaultEntryMode = mode
+    await invoke('save_general', { general: cfg.general })
+  } catch (error) {
+    console.error('Failed to save default entry mode:', error)
   }
 }
 
@@ -385,7 +412,27 @@ async function toggleAngleSnapStep(step: (typeof snapStepOptions)[number]) {
       </div>
 
       <div class="settings-card">
-        <div class="settings-card-row">
+        <div class="settings-card-header">
+          <span class="text-[12.5px] settings-text-label">{{ t('settings.whiteboardSection') }}</span>
+        </div>
+
+        <div class="settings-card-row settings-card-row--divided">
+          <span class="text-[12.5px] settings-text-label">{{ t('settings.defaultEntryMode') }}</span>
+          <div class="flex items-center gap-1 shrink-0 flex-wrap justify-end max-w-[62%]">
+            <button
+              v-for="mode in defaultEntryModeOptions"
+              :key="mode"
+              class="px-2 py-[4px] rounded-md ui-segment text-[10.5px] leading-none transition-colors duration-120 whitespace-nowrap"
+              :class="{ 'ui-segment--active': defaultEntryMode === mode }"
+              :aria-pressed="defaultEntryMode === mode"
+              @click="setDefaultEntryMode(mode)"
+            >
+              {{ t(`settings.defaultEntryMode${mode === 'screen' ? 'Screen' : 'Whiteboard'}`) }}
+            </button>
+          </div>
+        </div>
+
+        <div class="settings-card-row settings-card-row--divided">
           <span class="text-[12.5px] settings-text-label">{{ t('settings.preserveDrawings') }}</span>
           <button
             role="switch"
@@ -401,11 +448,8 @@ async function toggleAngleSnapStep(step: (typeof snapStepOptions)[number]) {
             />
           </button>
         </div>
-        <p class="settings-card-desc">{{ t('settings.preserveDrawingsDesc') }}</p>
-      </div>
 
-      <div class="settings-card">
-        <div class="settings-card-row">
+        <div class="settings-card-row settings-card-row--divided">
           <span class="text-[12.5px] settings-text-label">{{ t('settings.whiteboardPreserveDrawings') }}</span>
           <button
             role="switch"
@@ -421,7 +465,8 @@ async function toggleAngleSnapStep(step: (typeof snapStepOptions)[number]) {
             />
           </button>
         </div>
-        <p class="settings-card-desc">{{ t('settings.whiteboardPreserveDrawingsDesc') }}</p>
+
+        <p class="settings-card-desc">{{ t('settings.whiteboardSectionDesc') }}</p>
       </div>
     </div>
   </div>

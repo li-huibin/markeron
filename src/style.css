@@ -75,6 +75,14 @@
   padding: 14px 16px;
 }
 
+.settings-card-row--divided {
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.settings-card-header {
+  padding: 14px 16px 10px;
+}
+
 .settings-card-desc {
   margin: 0;
   padding: 8px 16px 14px;

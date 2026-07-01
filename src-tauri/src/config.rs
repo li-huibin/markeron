@@ -45,6 +45,15 @@ pub enum ToolbarLayout {
     Detailed,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub enum DefaultEntryMode {
+    #[serde(rename = "screen")]
+    #[default]
+    Screen,
+    #[serde(rename = "whiteboard")]
+    Whiteboard,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GeneralConfig {
     #[serde(default, rename = "dragMode")]
@@ -65,6 +74,8 @@ pub struct GeneralConfig {
     pub toolbar_visibility: ToolbarVisibility,
     #[serde(default, rename = "toolbarLayout")]
     pub toolbar_layout: ToolbarLayout,
+    #[serde(default, rename = "defaultEntryMode")]
+    pub default_entry_mode: DefaultEntryMode,
 }
 
 impl Default for GeneralConfig {
@@ -79,6 +90,7 @@ impl Default for GeneralConfig {
             angle_snap_step: default_angle_snap_step(),
             toolbar_visibility: ToolbarVisibility::Space,
             toolbar_layout: ToolbarLayout::Detailed,
+            default_entry_mode: DefaultEntryMode::Screen,
         }
     }
 }
@@ -118,6 +130,12 @@ impl GeneralConfig {
             ToolbarLayout::Simple | ToolbarLayout::Detailed
         ) {
             self.toolbar_layout = ToolbarLayout::Detailed;
+        }
+        if !matches!(
+            self.default_entry_mode,
+            DefaultEntryMode::Screen | DefaultEntryMode::Whiteboard
+        ) {
+            self.default_entry_mode = DefaultEntryMode::Screen;
         }
         self
     }
@@ -434,6 +452,30 @@ mod tests {
         let general = GeneralConfig::default();
         assert_eq!(general.toolbar_visibility, ToolbarVisibility::Space);
         assert_eq!(general.toolbar_layout, ToolbarLayout::Detailed);
+    }
+
+    #[test]
+    fn general_config_defaults_default_entry_mode() {
+        let general = GeneralConfig::default();
+        assert_eq!(general.default_entry_mode, DefaultEntryMode::Screen);
+    }
+
+    #[test]
+    fn config_deserializes_default_entry_mode() {
+        let json = r#"{
+            "shortcuts": {
+                "toggleDrawing": "Ctrl+Shift+D",
+                "clearDrawing": "Ctrl+Shift+C"
+            },
+            "general": {
+                "defaultEntryMode": "whiteboard"
+            }
+        }"#;
+        let config: AppConfig = serde_json::from_str(json).unwrap();
+        assert_eq!(
+            config.general.default_entry_mode,
+            DefaultEntryMode::Whiteboard
+        );
     }
 
     #[test]

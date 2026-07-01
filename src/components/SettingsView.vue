@@ -11,6 +11,7 @@ import {
   type ToolbarLayout,
   type ToolbarVisibility,
 } from '../utils/toolbarSettings'
+import { resolveDefaultEntryMode, type DefaultEntryMode } from '../utils/entryMode'
 import { isMacOS } from '../utils/platform'
 import { useI18n, syncLocaleFromConfig } from '../i18n'
 import GeneralTab from './settings/GeneralTab.vue'
@@ -154,6 +155,7 @@ const autoStartEnabled = ref(false)
 const dragMode = ref<DragMode>('off')
 const toolbarVisibility = ref<ToolbarVisibility>('space')
 const toolbarLayout = ref<ToolbarLayout>('detailed')
+const defaultEntryMode = ref<DefaultEntryMode>('screen')
 const preserveDrawings = ref(false)
 const whiteboardPreserveDrawings = ref(true)
 const angleSnapStep = ref<15 | 30 | 45>(15)
@@ -166,6 +168,7 @@ onMounted(async () => {
   dragMode.value = resolveDragMode(cfg.general)
   toolbarVisibility.value = resolveToolbarVisibility(cfg.general)
   toolbarLayout.value = resolveToolbarLayout(cfg.general)
+  defaultEntryMode.value = resolveDefaultEntryMode(cfg.general)
   preserveDrawings.value = cfg.general?.preserveDrawings ?? false
   whiteboardPreserveDrawings.value = cfg.general?.whiteboardPreserveDrawings ?? true
   angleSnapStep.value = (cfg.general?.angleSnapStep as 15 | 30 | 45 | undefined) ?? 15
@@ -375,6 +378,7 @@ onUnmounted(() => {
         :drag-mode="dragMode"
         :toolbar-visibility="toolbarVisibility"
         :toolbar-layout="toolbarLayout"
+        :default-entry-mode="defaultEntryMode"
         :preserve-drawings="preserveDrawings"
         :whiteboard-preserve-drawings="whiteboardPreserveDrawings"
         :auto-start-enabled="autoStartEnabled"
@@ -382,6 +386,7 @@ onUnmounted(() => {
         @update:drag-mode="dragMode = $event"
         @update:toolbar-visibility="toolbarVisibility = $event"
         @update:toolbar-layout="toolbarLayout = $event"
+        @update:default-entry-mode="defaultEntryMode = $event"
         @update:preserve-drawings="preserveDrawings = $event"
         @update:whiteboard-preserve-drawings="whiteboardPreserveDrawings = $event"
         @update:auto-start-enabled="autoStartEnabled = $event"
