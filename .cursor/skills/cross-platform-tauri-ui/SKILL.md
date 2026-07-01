@@ -58,6 +58,7 @@ All cross-platform UI colors live in **`src/style.css`** as named classes with *
 | `settings-nav-item`, `settings-nav-item--active` | Sidebar tabs |
 | `settings-toggle-on`, `settings-toggle-off` | Switches |
 | `settings-card`, `settings-card-row`, `settings-card-desc`, `settings-card--active` | Cards |
+| `settings-card--popover-host` | Card that hosts a dropdown/tooltip — overrides card `overflow` |
 | `settings-btn-accent-outline`, `settings-btn-accent-primary` | About page buttons |
 | `settings-row-hover`, `settings-row-hover-strong` | List row hover |
 | `settings-locale-item`, `settings-locale-item--active` | Language dropdown |
@@ -77,6 +78,47 @@ All cross-platform UI colors live in **`src/style.css`** as named classes with *
 | `color-swatch-ring*`, `color-picker-ring`, `color-dot-ring` | Color UI |
 
 All platforms use the same `rgba()` values — do not add Mac-only text opacity overrides.
+
+### Settings cards and popovers (overflow)
+
+`.settings-card` uses `overflow: hidden` in `style.css` so rounded borders clip
+cleanly on macOS WebKit. That **clips** any child with `position: absolute` or
+`fixed` (dropdowns, tooltips) and sibling cards below can paint over the
+overflow.
+
+**Rules:**
+
+1. Any card that contains a dropdown, tooltip, or popover must also use
+   `settings-card--popover-host` (`overflow: visible`).
+2. While the popover is open, raise the host card above siblings (e.g.
+   `relative z-20` when open) so the menu is not covered by the next card.
+3. Prefer `Teleport` to `body` for new floating UI if it must survive scroll
+   containers (`overflow-y-auto` on tab content) — see `GeneralTab.vue` language
+   select for the card-host pattern; Teleport is the more robust default for new
+   work.
+
+**Before changing a shared container class** (`.settings-card`, `.overlay-panel`,
+scroll wrappers), grep for floating children:
+
+```bash
+rg "absolute|fixed|ui-popover|ui-tooltip|Teleport" src/components/settings/
+```
+
+**Container CSS checklist** — these on a parent often break popovers; re-test
+open state after adding any of them:
+
+| Property | Risk |
+|----------|------|
+| `overflow: hidden` / `auto` | Clips absolute/fixed descendants |
+| `transform` | New stacking context; z-index surprises |
+| `contain: paint` | Clips overflow |
+| `isolation: isolate` | Stacking context; siblings may cover popover |
+
+**Manual QA after card/style refactors** (both platforms, ~2 min):
+
+- Settings → 常规: language dropdown fully visible, can switch locale
+- Settings → 快捷键: info tooltip visible on hover
+- Scroll the tab if applicable; popover still usable
 
 ---
 
@@ -108,7 +150,7 @@ Zero hits in `src/components` is the target for new work.
 
 | Surface | macOS | Windows |
 |---------|-------|---------|
-| Settings → 常规 | Toggles, dropdown, labels | Same |
+| Settings → 常规 | Toggles, **language dropdown open**, labels | Same |
 | Settings → 关于 | Green status, nav highlight, card borders | Same |
 | Space → settings panel | Text, borders, tool active state | Same |
 | Right-click color panel | Caption text, swatch rings | Same |
@@ -125,6 +167,20 @@ Zero hits in `src/components` is the target for new work.
 <!-- GOOD -->
 <span class="settings-text-muted">Label</span>
 <div class="settings-card">
+```
+
+```vue
+<!-- BAD: dropdown inside .settings-card without popover-host -->
+<div class="settings-card">
+  <div class="relative">
+    <div class="absolute ...">...</div>
+  </div>
+</div>
+
+<!-- GOOD: allow popover to escape card; raise z-index when open -->
+<div class="settings-card settings-card--popover-host" :class="{ 'relative z-20': open }">
+  ...
+</div>
 ```
 
 ```vue
