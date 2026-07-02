@@ -6,6 +6,7 @@ mod i18n;
 #[cfg(target_os = "macos")]
 mod macos;
 mod monitor;
+mod overlay;
 mod shortcuts;
 #[cfg(target_os = "windows")]
 mod win32;
@@ -19,6 +20,11 @@ use tauri::{
 use tracing::{info, warn};
 
 use config::{lock_or_recover, AppConfig, AppState};
+pub use overlay::{
+    activate_drawing, clear_drawing, deactivate_drawing, enter_penetration_mode,
+    exit_penetration_mode, set_toolbar_window_visible, setup_overlay_size, toggle_drawing,
+    toggle_penetration_mode,
+};
 
 pub fn rebuild_tray_menu(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     let s = i18n::strings();
@@ -37,117 +43,6 @@ pub fn rebuild_tray_menu(app: &AppHandle) -> Result<(), Box<dyn std::error::Erro
         tray.set_menu(Some(menu))?;
     }
     Ok(())
-}
-
-fn setup_overlay_size(app: &AppHandle) {
-    if let Some(window) = app.get_webview_window("overlay") {
-        if let Some((x, y, w, h)) = monitor::get_cursor_monitor_rect() {
-            #[cfg(target_os = "macos")]
-            {
-                // xcap returns logical coordinates (points) on macOS via CGDisplayBounds
-                window.set_size(tauri::LogicalSize::new(w, h)).ok();
-                window.set_position(tauri::LogicalPosition::new(x, y)).ok();
-            }
-            #[cfg(not(target_os = "macos"))]
-            {
-                // Subtract 1px from height to prevent Windows from treating it as
-                // fullscreen exclusive, which causes the taskbar to lose Mica effect.
-                window
-                    .set_size(tauri::PhysicalSize::new(w, h.saturating_sub(1)))
-                    .ok();
-                window.set_position(tauri::PhysicalPosition::new(x, y)).ok();
-            }
-        } else if let Some(mon) = app.primary_monitor().ok().flatten() {
-            let size = mon.size();
-            let pos = mon.position();
-            #[cfg(target_os = "macos")]
-            {
-                let scale = mon.scale_factor();
-                window
-                    .set_size(tauri::LogicalSize::new(
-                        size.width as f64 / scale,
-                        size.height as f64 / scale,
-                    ))
-                    .ok();
-                window
-                    .set_position(tauri::LogicalPosition::new(
-                        pos.x as f64 / scale,
-                        pos.y as f64 / scale,
-                    ))
-                    .ok();
-            }
-            #[cfg(not(target_os = "macos"))]
-            {
-                window
-                    .set_size(tauri::PhysicalSize::new(
-                        size.width,
-                        size.height.saturating_sub(1),
-                    ))
-                    .ok();
-                window
-                    .set_position(tauri::PhysicalPosition::new(pos.x, pos.y))
-                    .ok();
-            }
-        }
-        window.set_ignore_cursor_events(true).ok();
-    }
-}
-
-/// Deactivate drawing mode: set state to false, hide overlay, notify frontend.
-/// Unified logic used by exit_drawing command, focus-loss handler, and toggle.
-pub fn deactivate_drawing(app: &AppHandle, state: &AppState) {
-    let mut is_drawing = lock_or_recover(&state.is_drawing);
-    if !*is_drawing {
-        return;
-    }
-    *is_drawing = false;
-    drop(is_drawing);
-
-    if let Some(window) = app.get_webview_window("overlay") {
-        window.set_ignore_cursor_events(true).ok();
-        if let Err(e) = app.emit("toggle-drawing", false) {
-            warn!("Failed to emit toggle-drawing(false): {}", e);
-        }
-        window.hide().ok();
-    }
-}
-
-fn toggle_drawing(app: &AppHandle) {
-    let state = app.state::<AppState>();
-    let currently_drawing = *lock_or_recover(&state.is_drawing);
-
-    if currently_drawing {
-        // deactivate_drawing handles setting is_drawing = false
-        deactivate_drawing(app, &state);
-        return;
-    }
-
-    // Activate drawing
-    *lock_or_recover(&state.is_drawing) = true;
-
-    let preserve = lock_or_recover(&state.config).general.preserve_drawings;
-
-    if let Some(window) = app.get_webview_window("overlay") {
-        setup_overlay_size(app);
-        if !preserve {
-            if let Err(e) = app.emit("clear-drawing", ()) {
-                warn!("Failed to emit clear-drawing: {}", e);
-            }
-        }
-        window.show().ok();
-        window.set_ignore_cursor_events(false).ok();
-        window.set_always_on_top(true).ok();
-        window.set_focus().ok();
-        if let Err(e) = app.emit("toggle-drawing", true) {
-            warn!("Failed to emit toggle-drawing(true): {}", e);
-        }
-    }
-}
-
-fn clear_drawing(app: &AppHandle) {
-    if let Err(e) = app.emit("clear-drawing", ()) {
-        warn!("Failed to emit clear-drawing: {}", e);
-    }
 }
 
 fn open_settings(app: &AppHandle) {
@@ -214,7 +109,9 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .manage(AppState {
             config: Mutex::new(AppConfig::default()),
-            is_drawing: Mutex::new(false),
+            overlay_mode: Mutex::new(overlay::OverlayMode::Hidden),
+            suppress_penetration_until: Mutex::new(None),
+            whiteboard_mode: Mutex::new(false),
         })
         .invoke_handler(tauri::generate_handler![
             commands::get_config,
@@ -222,6 +119,13 @@ pub fn run() {
             commands::save_general,
             commands::save_locale,
             commands::exit_drawing,
+            commands::enter_penetration_mode,
+            commands::exit_penetration_mode,
+            commands::toggle_penetration_mode,
+            commands::set_toolbar_visible,
+            commands::set_toolbar_popup,
+            commands::suppress_penetration,
+            commands::set_whiteboard_mode,
             commands::open_url,
             clipboard::copy_screen,
             clipboard::copy_whiteboard,
@@ -278,14 +182,16 @@ pub fn run() {
             Ok(())
         })
         .on_window_event(|window, event| match event {
-            tauri::WindowEvent::CloseRequested { api, .. } if window.label() == "overlay" => {
+            tauri::WindowEvent::CloseRequested { api, .. }
+                if window.label() == "overlay" || window.label() == "toolbar" =>
+            {
                 api.prevent_close();
                 window.hide().ok();
             }
             tauri::WindowEvent::Focused(false) if window.label() == "overlay" => {
                 let app = window.app_handle();
                 let state = app.state::<AppState>();
-                deactivate_drawing(app, &state);
+                overlay::on_overlay_focus_lost(app, &state);
             }
             _ => {}
         })

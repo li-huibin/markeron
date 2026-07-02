@@ -4,6 +4,7 @@ export interface AppConfig {
   shortcuts: {
     toggleDrawing: string
     clearDrawing: string
+    togglePenetration: string
   }
   general: {
     dragMode?: DragMode

@@ -72,6 +72,7 @@ export default {
     shortcutLabels: {
       toggleDrawing: 'Toggle annotation',
       clearDrawing: 'Clear annotations',
+      togglePenetration: 'Toggle click-through',
     },
     shortcutsSaved: 'Shortcuts saved',
     shortcutsConflict: 'These shortcuts are occupied: {keys}',
@@ -135,6 +136,9 @@ export default {
     whiteboard: 'Whiteboard',
     exitWhiteboard: 'Exit whiteboard',
     copy: 'Copy',
+    drawingMode: 'Drawing mode',
+    penetrationMode: 'Click-through mode',
+    exit: 'Exit annotation',
     more: 'More',
     less: 'Less',
   },
@@ -143,8 +147,12 @@ export default {
     basicDesc1:
       'After launching, the app runs silently in the <strong class="text-white/70">system tray</strong>. Press the global shortcut to enter annotation mode.',
     basicDesc2:
-      'Annotations cover the full screen (including taskbar). Press <kbd class="help-kbd">Esc</kbd> to exit; drawings are cleared by default — enable **Keep after exit** under General → Whiteboard & content to resume later.',
+      'Annotations cover the full screen (including taskbar). Press <kbd class="help-kbd">Esc</kbd> to exit; use <kbd class="help-kbd">Ctrl+Shift+X</kbd> or <kbd class="help-kbd">X</kbd> to toggle click-through mode. Drawings are cleared by default — enable **Keep after exit** under General → Whiteboard & content to resume later.',
     globalShortcuts: 'Global Shortcuts',
+    inSessionShortcuts: 'In Annotation Mode',
+    togglePenetration: 'Toggle click-through',
+    togglePenetrationLocal: 'Toggle click-through (while drawing)',
+    exitDrawing: 'Exit annotation',
     thAction: 'Action',
     thWindows: 'Windows',
     thMacOS: 'macOS',

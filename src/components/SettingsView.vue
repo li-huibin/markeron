@@ -25,8 +25,16 @@ const modLabel = computed(() => (isMacOS() ? 'Command' : 'Ctrl'))
 
 const defaultShortcutStrings = computed(() =>
   isMacOS()
-    ? { toggleDrawing: 'Command+Shift+D', clearDrawing: 'Command+Shift+C' }
-    : { toggleDrawing: 'Ctrl+Shift+D', clearDrawing: 'Ctrl+Shift+C' },
+    ? {
+        toggleDrawing: 'Command+Shift+D',
+        clearDrawing: 'Command+Shift+C',
+        togglePenetration: 'Command+Shift+X',
+      }
+    : {
+        toggleDrawing: 'Ctrl+Shift+D',
+        clearDrawing: 'Ctrl+Shift+C',
+        togglePenetration: 'Ctrl+Shift+X',
+      },
 )
 
 const hashTab = window.location.hash.split('/')[1]
@@ -38,11 +46,13 @@ const tabs = computed(() => tabIds.map((id) => ({ id, label: t(`settings.tabs.${
 const shortcuts = reactive<AppConfig['shortcuts']>({
   toggleDrawing: '',
   clearDrawing: '',
+  togglePenetration: '',
 })
 
 const labels = computed<Record<keyof AppConfig['shortcuts'], string>>(() => ({
   toggleDrawing: t('settings.shortcutLabels.toggleDrawing'),
   clearDrawing: t('settings.shortcutLabels.clearDrawing'),
+  togglePenetration: t('settings.shortcutLabels.togglePenetration'),
 }))
 
 const capturing = ref<keyof AppConfig['shortcuts'] | null>(null)
@@ -141,11 +151,13 @@ async function resetDefaults() {
     shortcuts: {
       toggleDrawing: d.toggleDrawing,
       clearDrawing: d.clearDrawing,
+      togglePenetration: d.togglePenetration,
     },
   })
   if (res.ok) {
     shortcuts.toggleDrawing = d.toggleDrawing
     shortcuts.clearDrawing = d.clearDrawing
+    shortcuts.togglePenetration = d.togglePenetration
     message.value = { type: 'success', text: t('settings.restoredDefaults') }
     setTimeout(() => {
       message.value = null
@@ -427,6 +439,32 @@ onUnmounted(() => {
                 <div class="help-keys">
                   <kbd class="help-kbd">Ctrl+Shift+C</kbd><span class="help-sep">/</span
                   ><kbd class="help-kbd">⌘+⇧+C</kbd>
+                </div>
+              </div>
+              <div class="help-row">
+                <span class="help-label">{{ t('help.togglePenetration') }}</span>
+                <div class="help-keys">
+                  <kbd class="help-kbd">Ctrl+Shift+X</kbd><span class="help-sep">/</span
+                  ><kbd class="help-kbd">⌘+⇧+X</kbd>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- In-session shortcuts -->
+          <div class="settings-card help-card">
+            <div class="help-card-header">{{ t('help.inSessionShortcuts') }}</div>
+            <div class="help-rows">
+              <div class="help-row">
+                <span class="help-label">{{ t('help.togglePenetrationLocal') }}</span>
+                <div class="help-keys">
+                  <kbd class="help-kbd">X</kbd>
+                </div>
+              </div>
+              <div class="help-row">
+                <span class="help-label">{{ t('help.exitDrawing') }}</span>
+                <div class="help-keys">
+                  <kbd class="help-kbd">Esc</kbd>
                 </div>
               </div>
             </div>

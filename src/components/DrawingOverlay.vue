@@ -1,12 +1,20 @@
 <script setup lang="ts">
 import { ref, shallowRef, onMounted, onUnmounted, nextTick, computed, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
-import { listen, type UnlistenFn } from '@tauri-apps/api/event'
+import { listen, emit, type UnlistenFn } from '@tauri-apps/api/event'
 import { useDrawing, type Tool, type DrawAction } from '../composables/useDrawing'
 import { useTooltip } from '../composables/useTooltip'
 import { createKeyDownHandler } from '../composables/useOverlayKeyboard'
+import {
+  OVERLAY_STATE_EVENT,
+  TOOLBAR_ACTION_EVENT,
+  OVERLAY_STATE_REQUEST_EVENT,
+  TOOLBAR_PANEL_HOVER_EVENT,
+  OVERLAY_POINTER_SCREEN_EVENT,
+  emitOverlayState,
+  type ToolbarAction,
+} from '../composables/overlayBridge'
 import type { AppConfig } from '../types/app'
-import ToolToolbar from './ToolToolbar.vue'
 import TextBox from './TextBox.vue'
 import { TOOL_ICON_MAP, WIDTH_PRESETS, eraserLineWidth } from '../constants/tools'
 import { COLOR_PALETTE } from '../constants/colors'
@@ -41,24 +49,17 @@ const previewCanvasRef = ref<HTMLCanvasElement | null>(null)
 const containerRef = ref<HTMLDivElement | null>(null)
 const textBoxRef = ref<InstanceType<typeof TextBox> | null>(null)
 const active = ref(false)
-const showToolbarPopup = ref(false)
-const toolbarVisibility = ref<ToolbarVisibility>('space')
+const penetrationMode = ref(false)
+type OverlaySessionMode = 'hidden' | 'drawing' | 'penetration'
+let lastOverlayMode: OverlaySessionMode = 'hidden'
 const toolbarLayout = ref<ToolbarLayout>('detailed')
+const toolbarVisibility = ref<ToolbarVisibility>('space')
 const toolbarPinned = computed(() => isToolbarPinned(toolbarVisibility.value))
-const toolbarVisible = computed(() => active.value && (toolbarPinned.value || showToolbarPopup.value))
-const toolbarPopupOpen = computed(() => active.value && showToolbarPopup.value && !toolbarPinned.value)
+const showToolbarPopup = ref(false)
+const toolbarPanelHovered = ref(false)
 /** Hide overlay chrome during screen capture so panels are not in the clipboard image. */
 const hideUiForCapture = ref(false)
-const toolbarShown = computed(() => toolbarVisible.value && !hideUiForCapture.value)
-const toolbarHovered = ref(false)
-const toolbarRef = ref<InstanceType<typeof ToolToolbar> | null>(null)
-watch(toolbarShown, (shown) => {
-  if (!shown) {
-    toolbarHovered.value = false
-  } else {
-    nextTick(() => toolbarRef.value?.syncPanelHover())
-  }
-})
+const sessionActive = computed(() => active.value || penetrationMode.value)
 const mousePos = ref({ x: 0, y: 0 })
 const textBoxPos = ref<{ x: number; y: number } | null>(null)
 const whiteboardMode = ref(false)
@@ -120,7 +121,7 @@ function cycleColor(direction: number) {
 
 function onContextMenu(e: MouseEvent) {
   e.preventDefault()
-  if (!active.value || toolbarPopupOpen.value || textBoxPos.value || isDrawing.value) return
+  if (!active.value || penetrationMode.value || textBoxPos.value || isDrawing.value) return
   quickColorsPos.value = { x: e.clientX, y: e.clientY }
   showQuickColors.value = true
 }
@@ -188,18 +189,58 @@ const activeTextBoxFontSize = ref(24)
 const activeTextBoxInitialText = ref('')
 const editingOriginalAction = shallowRef<DrawAction | null>(null)
 
-function setToolbarPopupVisible(visible: boolean) {
+function applyToolbarFromConfig(general?: AppConfig['general']) {
+  toolbarLayout.value = resolveToolbarLayout(general)
+  const nextVisibility = resolveToolbarVisibility(general)
+  toolbarVisibility.value = nextVisibility
+  if (isToolbarPinned(nextVisibility)) {
+    showToolbarPopup.value = false
+    if (sessionActive.value) {
+      void invoke('set_toolbar_visible', { visible: true })
+    }
+  } else if (sessionActive.value) {
+    showToolbarPopup.value = false
+    void invoke('set_toolbar_visible', { visible: false })
+  }
+}
+
+const TOOLBAR_PANEL_HEIGHT = 400
+
+function toolbarPanelWidth(layout: ToolbarLayout): number {
+  return layout === 'detailed' ? 272 : 304
+}
+
+function clampToolbarPosition(left: number, top: number, panelW: number, panelH: number) {
+  const margin = 12
+  return {
+    left: Math.max(margin, Math.min(left, window.innerWidth - panelW - margin)),
+    top: Math.max(margin, Math.min(top, window.innerHeight - panelH - margin)),
+  }
+}
+
+async function setToolbarPopupVisible(visible: boolean) {
   if (toolbarPinned.value) return
   if (showToolbarPopup.value === visible) return
   showToolbarPopup.value = visible
+  if (!visible) {
+    toolbarPanelHovered.value = false
+    await invoke('set_toolbar_popup', { visible: false, x: null, y: null })
+    return
+  }
+  const panelW = toolbarPanelWidth(toolbarLayout.value)
+  const { left, top } = clampToolbarPosition(
+    lastPointerX - panelW / 2,
+    lastPointerY - TOOLBAR_PANEL_HEIGHT / 2,
+    panelW,
+    TOOLBAR_PANEL_HEIGHT,
+  )
+  await invoke('set_toolbar_popup', { visible: true, x: left, y: top })
+  toolbarPanelHovered.value = true
 }
 
-function applyToolbarFromConfig(general?: AppConfig['general']) {
-  toolbarVisibility.value = resolveToolbarVisibility(general)
-  toolbarLayout.value = resolveToolbarLayout(general)
-  if (toolbarPinned.value) {
-    showToolbarPopup.value = false
-  }
+function toggleToolbarPopupVisible() {
+  if (toolbarPinned.value) return
+  void setToolbarPopupVisible(!showToolbarPopup.value)
 }
 
 function applyDefaultEntryFromConfig(general?: AppConfig['general']) {
@@ -212,19 +253,24 @@ function applyEraserModeFromConfig(general?: AppConfig['general']) {
 
 function applyDefaultEntryOnActivate() {
   if (defaultEntryMode.value === 'whiteboard') {
-    enterWhiteboardMode({ fromDefaultEntry: true })
+    void enterWhiteboardMode({ fromDefaultEntry: true })
   } else {
     whiteboardMode.value = false
+    void syncWhiteboardMode(false)
   }
 }
 
-function toggleToolbarPopupVisible() {
-  if (toolbarPinned.value) return
-  setToolbarPopupVisible(!showToolbarPopup.value)
+async function syncWhiteboardMode(active: boolean) {
+  try {
+    await invoke('set_whiteboard_mode', { active })
+  } catch (error) {
+    console.error('Failed to sync whiteboard mode:', error)
+  }
 }
 
-function enterWhiteboardMode(options?: { fromDefaultEntry?: boolean }) {
+async function enterWhiteboardMode(options?: { fromDefaultEntry?: boolean }) {
   if (whiteboardMode.value) return
+  await resumeDrawingFromToolbar()
   if (
     shouldClearWhiteboardOnEntry({
       whiteboardPreserveDrawings: whiteboardPreserveDrawings.value,
@@ -236,9 +282,10 @@ function enterWhiteboardMode(options?: { fromDefaultEntry?: boolean }) {
     hardReset()
   }
   whiteboardMode.value = true
-  showToolbarPopup.value = false
   showQuickColors.value = false
   textBoxPos.value = null
+  void setToolbarPopupVisible(false)
+  void syncWhiteboardMode(true)
   currentTool.value = 'pen'
   showTip(t('overlay.whiteboardReady'))
 }
@@ -246,7 +293,7 @@ function enterWhiteboardMode(options?: { fromDefaultEntry?: boolean }) {
 function exitWhiteboardMode() {
   if (!whiteboardMode.value) return
   whiteboardMode.value = false
-  showToolbarPopup.value = false
+  void syncWhiteboardMode(false)
   showQuickColors.value = false
   textBoxPos.value = null
   if (!whiteboardPreserveDrawings.value) {
@@ -267,21 +314,34 @@ let dragStartX = 0
 let dragStartY = 0
 let lastPointerX = 0
 let lastPointerY = 0
+let lastScreenX = 0
+let lastScreenY = 0
+let pointerScreenKnown = false
+
+function emitPointerScreenForToolbar() {
+  if (!pointerScreenKnown) return
+  void emit(OVERLAY_POINTER_SCREEN_EVENT, { x: lastScreenX, y: lastScreenY })
+}
 
 function onGlobalPointerMove(e: PointerEvent) {
   lastPointerX = e.clientX
   lastPointerY = e.clientY
+  lastScreenX = e.screenX
+  lastScreenY = e.screenY
+  pointerScreenKnown = true
   mousePos.value = { x: e.clientX, y: e.clientY }
+  if (active.value && !penetrationMode.value && !toolbarPanelHovered.value) {
+    updateCursorEl(e.clientX, e.clientY)
+  }
 }
 
 watch(
-  active,
-  (isActive) => {
-    if (isActive) {
+  sessionActive,
+  (isLive) => {
+    if (isLive) {
       window.addEventListener('pointermove', onGlobalPointerMove, { passive: true })
     } else {
       window.removeEventListener('pointermove', onGlobalPointerMove)
-      toolbarHovered.value = false
     }
   },
   { immediate: true },
@@ -371,7 +431,7 @@ function canStartElementDrag(e: PointerEvent): boolean {
 
 function onDoubleClick(e: MouseEvent) {
   if (e.button !== 0) return
-  if (toolbarPopupOpen.value || showQuickColors.value) return
+  if (penetrationMode.value || showQuickColors.value) return
 
   const pos = { x: e.clientX, y: e.clientY }
   const clickedActionInfo = findActionAt(pos)
@@ -410,7 +470,7 @@ function onDoubleClick(e: MouseEvent) {
 
 function onPointerDown(e: PointerEvent) {
   if (e.button !== 0) return
-  if (toolbarPopupOpen.value || showQuickColors.value) return
+  if (penetrationMode.value || !active.value || showQuickColors.value) return
 
   lastPointerX = e.clientX
   lastPointerY = e.clientY
@@ -457,6 +517,9 @@ function onPointerDown(e: PointerEvent) {
 function onPointerMove(e: PointerEvent) {
   lastPointerX = e.clientX
   lastPointerY = e.clientY
+  lastScreenX = e.screenX
+  lastScreenY = e.screenY
+  pointerScreenKnown = true
   pointerModDown.value = modDown(e)
   updateCursorEl(e.clientX, e.clientY)
 
@@ -471,7 +534,7 @@ function onPointerMove(e: PointerEvent) {
 
     if (
       active.value &&
-      !toolbarPopupOpen.value &&
+      !penetrationMode.value &&
       !showQuickColors.value &&
       !textBoxPos.value &&
       isDragEnabled(dragMode.value)
@@ -481,7 +544,7 @@ function onPointerMove(e: PointerEvent) {
           hoverRafId = null
           if (
             active.value &&
-            !toolbarPopupOpen.value &&
+            !penetrationMode.value &&
             !showQuickColors.value &&
             !textBoxPos.value &&
             isDragEnabled(dragMode.value)
@@ -523,6 +586,22 @@ function onPointerUp(e: PointerEvent) {
   }
 }
 
+function abortActivePointerInteraction() {
+  if (hoverRafId !== null) {
+    cancelAnimationFrame(hoverRafId)
+    hoverRafId = null
+  }
+  if (isDragging) {
+    isDragging = false
+    isMoving.value = false
+    endDrag()
+  }
+  endDraw()
+  toolBeforeModifier = null
+  hoveredActionInfo.value = null
+  pointerModDown.value = false
+}
+
 function onTextCommit() {
   commitCurrentTextBox(false)
 }
@@ -553,6 +632,7 @@ const onKeyDown = createKeyDownHandler(
     redo,
     clearAll,
     exitDrawing,
+    togglePenetrationMode,
     enterWhiteboardMode,
     exitWhiteboardMode,
     copyScreen,
@@ -562,6 +642,11 @@ const onKeyDown = createKeyDownHandler(
     commitCurrentTextBox,
   },
 )
+
+async function togglePenetrationMode() {
+  if (whiteboardMode.value) return
+  await invoke('toggle_penetration_mode')
+}
 
 // Custom cursor element ref — position updated directly in pointermove for performance
 const cursorEl = ref<HTMLDivElement | null>(null)
@@ -593,18 +678,19 @@ const canvasCursor = computed(() => {
       (hoveredActionInfo.value && !isDrawing.value && (dragMode.value === 'hover' || pointerModDown.value)))
   if (showDragCursor) return 'move'
   if (currentTool.value === 'text') return 'text'
-  if (showQuickColors.value || toolbarPopupOpen.value) return 'default'
+  if (showQuickColors.value) return 'default'
   return 'none'
 })
 
 const showCustomCursor = computed(
   () =>
     active.value &&
+    !penetrationMode.value &&
     canvasCursor.value === 'none' &&
     !textBoxPos.value &&
     !hideUiForCapture.value &&
-    !toolbarHovered.value &&
-    !showQuickColors.value,
+    !showQuickColors.value &&
+    !toolbarPanelHovered.value,
 )
 
 // Fix cursor offset when switching tools/colors via shortcut while pointer is stationary
@@ -614,6 +700,12 @@ watch([currentTool, currentColor], () => {
       updateCursorEl(lastPointerX, lastPointerY)
     }
   })
+})
+
+watch(showCustomCursor, (visible) => {
+  if (visible) {
+    nextTick(() => updateCursorEl(lastPointerX, lastPointerY))
+  }
 })
 
 const quickColorsPanelStyle = computed(() => {
@@ -627,7 +719,83 @@ const quickColorsPanelStyle = computed(() => {
   return { left: left + 'px', top: top + 'px' }
 })
 
-const unlisteners: UnlistenFn[] = []
+function syncOverlayStateToToolbar() {
+  if (!sessionActive.value) return
+  emitOverlayState({
+    currentTool: currentTool.value,
+    currentColor: currentColor.value,
+    lineWidth: lineWidth.value,
+    whiteboardMode: whiteboardMode.value,
+    penetrationMode: penetrationMode.value,
+    canUndo: canUndo.value,
+    canRedo: canRedo.value,
+    canClear: canClear.value,
+    toolbarLayout: toolbarLayout.value,
+  })
+}
+
+async function resumeDrawingFromToolbar() {
+  if (penetrationMode.value) {
+    await invoke('exit_penetration_mode')
+  }
+}
+
+async function handleToolbarAction(action: ToolbarAction) {
+  switch (action.type) {
+    case 'selectTool':
+      await resumeDrawingFromToolbar()
+      currentTool.value = action.tool
+      showToolTip(action.tool)
+      break
+    case 'selectColor':
+      await resumeDrawingFromToolbar()
+      currentColor.value = action.color
+      showColorTip(action.color)
+      break
+    case 'updateLineWidth':
+      await resumeDrawingFromToolbar()
+      lineWidth.value = action.width
+      break
+    case 'undo':
+      undo()
+      break
+    case 'redo':
+      redo()
+      break
+    case 'clearAll':
+      clearAll()
+      break
+    case 'toggleWhiteboard':
+      await toggleWhiteboardFromToolbar()
+      break
+    case 'copy':
+      copyFromToolbar()
+      break
+    case 'togglePenetration':
+      await togglePenetrationMode()
+      break
+    case 'exitDrawing':
+      exitDrawing()
+      break
+  }
+  syncOverlayStateToToolbar()
+}
+
+watch(
+  [
+    currentTool,
+    currentColor,
+    lineWidth,
+    whiteboardMode,
+    penetrationMode,
+    canUndo,
+    canRedo,
+    canClear,
+    toolbarLayout,
+    sessionActive,
+  ],
+  () => syncOverlayStateToToolbar(),
+)
 
 function syncPointerModFromKey(e: KeyboardEvent) {
   if (e.key === 'Control' || e.key === 'Meta' || modDown(e)) {
@@ -643,6 +811,8 @@ function onKeyUp(e: KeyboardEvent) {
     pointerModDown.value = false
   }
 }
+
+const unlisteners: UnlistenFn[] = []
 
 onMounted(async () => {
   resizeCanvas()
@@ -680,29 +850,77 @@ onMounted(async () => {
   )
 
   unlisteners.push(
-    await listen<boolean>('toggle-drawing', (event) => {
-      const isActive = event.payload
-      active.value = isActive
-      showToolbarPopup.value = false
+    await listen(OVERLAY_STATE_REQUEST_EVENT, () => {
+      syncOverlayStateToToolbar()
+    }),
+  )
+
+  unlisteners.push(
+    await listen<string>('overlay-mode-changed', (event) => {
+      const mode = event.payload as OverlaySessionMode
+      const previousMode = lastOverlayMode
+      lastOverlayMode = mode
+      penetrationMode.value = mode === 'penetration'
+      active.value = mode === 'drawing'
       showQuickColors.value = false
       textBoxPos.value = null
-      if (!isActive) {
+      if (mode === 'hidden') {
         whiteboardMode.value = false
+        void syncWhiteboardMode(false)
+        toolbarPanelHovered.value = false
+        showToolbarPopup.value = false
+        if (!preserveDrawings.value) {
+          hardReset()
+        }
+      } else if (mode === 'drawing') {
+        toolbarPanelHovered.value = false
+        if (!toolbarPinned.value) {
+          showToolbarPopup.value = false
+        }
+        if (previousMode === 'hidden') {
+          currentTool.value = 'pen'
+          applyDefaultEntryOnActivate()
+          nextTick(() => resizeCanvas())
+        }
+        nextTick(() => {
+          if (showCustomCursor.value) {
+            updateCursorEl(lastPointerX, lastPointerY)
+          }
+          emitPointerScreenForToolbar()
+        })
+      } else if (mode === 'penetration') {
+        abortActivePointerInteraction()
+        if (!toolbarPinned.value) {
+          void setToolbarPopupVisible(false)
+        }
       }
-      if (!preserveDrawings.value) {
-        hardReset()
-      }
-      if (isActive) {
-        currentTool.value = 'pen'
-        applyDefaultEntryOnActivate()
-        nextTick(() => resizeCanvas())
-      }
+      syncOverlayStateToToolbar()
+    }),
+  )
+
+  unlisteners.push(
+    await listen<ToolbarAction>(TOOLBAR_ACTION_EVENT, (event) => {
+      void handleToolbarAction(event.payload)
     }),
   )
 
   unlisteners.push(
     await listen('clear-drawing', () => {
       hardReset()
+      syncOverlayStateToToolbar()
+    }),
+  )
+
+  unlisteners.push(
+    await listen('toolbar-window-closed', () => {
+      toolbarPanelHovered.value = false
+      showToolbarPopup.value = false
+    }),
+  )
+
+  unlisteners.push(
+    await listen<boolean>(TOOLBAR_PANEL_HOVER_EVENT, (event) => {
+      toolbarPanelHovered.value = event.payload
     }),
   )
 })
@@ -730,11 +948,11 @@ onUnmounted(() => {
 
 let isCopying = false
 
-function toggleWhiteboardFromToolbar() {
+async function toggleWhiteboardFromToolbar() {
   if (whiteboardMode.value) {
     exitWhiteboardMode()
   } else {
-    enterWhiteboardMode()
+    await enterWhiteboardMode()
   }
 }
 
@@ -746,13 +964,26 @@ function copyFromToolbar() {
   }
 }
 
+function onPointerLeave(e: PointerEvent) {
+  if (isDrawing.value || isDragging) return
+  onPointerUp(e)
+}
+
 async function copyScreen() {
   if (isCopying) return
   isCopying = true
+  const restoreToolbar = toolbarPinned.value || showToolbarPopup.value
   try {
     hideUiForCapture.value = true
     showQuickColors.value = false
     disposeTooltip()
+    if (restoreToolbar) {
+      if (toolbarPinned.value) {
+        await invoke('set_toolbar_visible', { visible: false })
+      } else {
+        await setToolbarPopupVisible(false)
+      }
+    }
     await nextTick()
     await new Promise<void>((resolve) =>
       requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(resolve, 32))),
@@ -764,6 +995,13 @@ async function copyScreen() {
     showTip(t('overlay.copyFailed'))
   } finally {
     hideUiForCapture.value = false
+    if (restoreToolbar) {
+      if (toolbarPinned.value) {
+        await invoke('set_toolbar_visible', { visible: true })
+      } else {
+        await setToolbarPopupVisible(true)
+      }
+    }
     isCopying = false
   }
 }
@@ -787,7 +1025,6 @@ async function copyWhiteboard() {
 
 function exitDrawing() {
   commitCurrentTextBox()
-  showToolbarPopup.value = false
   showQuickColors.value = false
   textBoxPos.value = null
   invoke('exit_drawing')
@@ -798,7 +1035,10 @@ function exitDrawing() {
   <div
     ref="containerRef"
     class="fixed top-0 left-0 w-screen h-screen z-99999"
-    :class="[active ? 'pointer-events-auto' : 'pointer-events-none', whiteboardMode ? 'bg-white' : '']"
+    :class="[
+      active && !penetrationMode ? 'pointer-events-auto' : 'pointer-events-none',
+      whiteboardMode ? 'bg-white' : '',
+    ]"
   >
     <canvas
       ref="historyCanvasRef"
@@ -815,7 +1055,7 @@ function exitDrawing() {
       @dblclick="onDoubleClick"
       @pointermove="onPointerMove"
       @pointerup="onPointerUp"
-      @pointerleave="onPointerUp"
+      @pointerleave="onPointerLeave"
       @contextmenu.prevent="onContextMenu"
       @wheel="onWheel"
     />
@@ -1066,49 +1306,6 @@ function exitDrawing() {
         </div>
       </div>
     </Transition>
-
-    <ToolToolbar
-      v-if="toolbarVisible"
-      v-show="!hideUiForCapture"
-      ref="toolbarRef"
-      :layout="toolbarLayout"
-      :pinned="toolbarPinned"
-      :current-tool="currentTool"
-      :current-color="currentColor"
-      :line-width="lineWidth"
-      :whiteboard-mode="whiteboardMode"
-      :can-undo="canUndo"
-      :can-redo="canRedo"
-      :can-clear="canClear"
-      :anchor-x="mousePos.x"
-      :anchor-y="mousePos.y"
-      :pointer-x="mousePos.x"
-      :pointer-y="mousePos.y"
-      @select-tool="
-        (tool: Tool) => {
-          currentTool = tool
-          showToolTip(tool)
-        }
-      "
-      @select-color="
-        (color: string) => {
-          currentColor = color
-          showColorTip(color)
-        }
-      "
-      @update-line-width="
-        (w: number) => {
-          lineWidth = w
-        }
-      "
-      @close="setToolbarPopupVisible(false)"
-      @panel-hover="toolbarHovered = $event"
-      @undo="undo"
-      @redo="redo"
-      @clear-all="clearAll"
-      @toggle-whiteboard="toggleWhiteboardFromToolbar"
-      @copy="copyFromToolbar"
-    />
   </div>
 </template>
 

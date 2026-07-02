@@ -26,3 +26,7 @@ pub fn configure_overlay_window(app: &AppHandle) {
     // transparent windows; calling Objective-C selectors on WryWebView will crash.
     window.set_background_color(Some(Color(0, 0, 0, 0))).ok();
 }
+
+pub fn configure_toolbar_window(window: &WebviewWindow) {
+    window.set_background_color(Some(Color(0, 0, 0, 0))).ok();
+}

@@ -8,6 +8,7 @@ pub struct Strings {
     pub window_title: &'static str,
     pub toggle_drawing: &'static str,
     pub clear_drawing: &'static str,
+    pub toggle_penetration: &'static str,
 }
 
 const ZH: Strings = Strings {
@@ -18,6 +19,7 @@ const ZH: Strings = Strings {
     window_title: "MarkerOn 设置",
     toggle_drawing: "开始标注",
     clear_drawing: "清除标注",
+    toggle_penetration: "切换穿透模式",
 };
 
 const EN: Strings = Strings {
@@ -28,6 +30,7 @@ const EN: Strings = Strings {
     window_title: "MarkerOn Settings",
     toggle_drawing: "Toggle annotation",
     clear_drawing: "Clear annotations",
+    toggle_penetration: "Toggle click-through",
 };
 
 static USE_CHINESE: AtomicBool = AtomicBool::new(false);

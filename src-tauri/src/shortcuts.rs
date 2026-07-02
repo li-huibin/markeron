@@ -1,6 +1,6 @@
 use tauri::{AppHandle, Manager};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut};
-use tracing::warn;
+use tracing::{info, warn};
 
 use crate::config::{lock_or_recover, AppState};
 
@@ -47,6 +47,7 @@ mod tests {
         let defaults = crate::config::default_shortcuts();
         assert!(parse_shortcut(&defaults.toggle_drawing).is_some());
         assert!(parse_shortcut(&defaults.clear_drawing).is_some());
+        assert!(parse_shortcut(&defaults.toggle_penetration).is_some());
     }
 }
 
@@ -70,20 +71,41 @@ pub fn register_shortcuts(app: &AppHandle) {
                 })
         {
             warn!("Failed to register toggle_drawing shortcut: {}", e);
+        } else {
+            info!("Registered toggle_drawing shortcut: {}", config.shortcuts.toggle_drawing);
         }
     }
 
     if let Some(shortcut) = parse_shortcut(&config.shortcuts.clear_drawing) {
-        let h = app_handle.clone();
         if let Err(e) =
             app.global_shortcut()
-                .on_shortcut(shortcut, move |_app, _shortcut, event| {
+                .on_shortcut(shortcut, move |app, _shortcut, event| {
                     if event.state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
-                        crate::clear_drawing(&h);
+                        let state = app.state::<crate::config::AppState>();
+                        crate::clear_drawing(app, &state);
                     }
                 })
         {
             warn!("Failed to register clear_drawing shortcut: {}", e);
+        }
+    }
+
+    if let Some(shortcut) = parse_shortcut(&config.shortcuts.toggle_penetration) {
+        if let Err(e) =
+            app.global_shortcut()
+                .on_shortcut(shortcut, move |app, _shortcut, event| {
+                    if event.state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
+                        let state = app.state::<crate::config::AppState>();
+                        crate::toggle_penetration_mode(app, &state);
+                    }
+                })
+        {
+            warn!("Failed to register toggle_penetration shortcut: {}", e);
+        } else {
+            info!(
+                "Registered toggle_penetration shortcut: {}",
+                config.shortcuts.toggle_penetration
+            );
         }
     }
 }

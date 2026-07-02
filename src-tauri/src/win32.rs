@@ -29,10 +29,39 @@ pub struct MONITORINFO {
 
 pub const MONITOR_DEFAULTTONEAREST: u32 = 2;
 
+pub const HWND_TOPMOST: isize = -1;
+pub const SWP_NOMOVE: u32 = 0x0002;
+pub const SWP_NOSIZE: u32 = 0x0001;
+pub const SWP_NOACTIVATE: u32 = 0x0010;
+
 extern "system" {
     pub fn GetCursorPos(lp_point: *mut POINT) -> i32;
     pub fn MonitorFromPoint(pt: POINT, dw_flags: u32) -> isize;
     pub fn GetMonitorInfoW(h_monitor: isize, lpmi: *mut MONITORINFO) -> i32;
+    pub fn SetWindowPos(
+        h_wnd: isize,
+        h_wnd_insert_after: isize,
+        x: i32,
+        y: i32,
+        cx: i32,
+        cy: i32,
+        u_flags: u32,
+    ) -> i32;
+}
+
+/// Raise a window to the top of the topmost group without stealing keyboard focus.
+pub fn raise_window_topmost_no_activate(hwnd: isize) {
+    unsafe {
+        SetWindowPos(
+            hwnd,
+            HWND_TOPMOST,
+            0,
+            0,
+            0,
+            0,
+            SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE,
+        );
+    }
 }
 
 /// Returns (x, y, width, height) of the monitor containing the cursor.

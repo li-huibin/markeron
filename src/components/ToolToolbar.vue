@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import { ref, nextTick, onMounted, onUnmounted, computed, watch } from 'vue'
-import { Undo2, Redo2, Trash2, Layout, Copy, MoreHorizontal, ChevronUp } from '@lucide/vue'
+import { Undo2, Redo2, Trash2, Layout, Copy, MoreHorizontal, ChevronUp, MousePointer2, X } from '@lucide/vue'
 import type { Tool } from '../composables/useDrawing'
 import { isMacOS } from '../utils/platform'
 import { useI18n } from '../i18n'
 import { TOOL_DEFS, WIDTH_PRESETS } from '../constants/tools'
 import { COLOR_ROWS } from '../constants/colors'
 import { loadToolbarPosition, saveToolbarPosition } from '../utils/toolbarPosition'
+import { fitToolbarWindow, measureToolbarPanelHeight } from '../utils/toolbarWindow'
+import { isPointerOverPanelRect } from '../utils/toolbarPanelHover'
+import { LogicalPosition } from '@tauri-apps/api/dpi'
+import { getCurrentWindow } from '@tauri-apps/api/window'
 import type { ToolbarLayout } from '../utils/toolbarSettings'
 
 const { t } = useI18n()
@@ -16,10 +20,12 @@ const modKeyLabel = computed(() => (isMacOS() ? 'Command' : 'Ctrl'))
 const props = defineProps<{
   layout: ToolbarLayout
   pinned: boolean
+  standaloneWindow?: boolean
   currentTool: Tool
   currentColor: string
   lineWidth: number
   whiteboardMode: boolean
+  penetrationMode?: boolean
   canUndo: boolean
   canRedo: boolean
   canClear: boolean
@@ -39,6 +45,8 @@ const emit = defineEmits<{
   clearAll: []
   toggleWhiteboard: []
   copy: []
+  togglePenetration: []
+  exitDrawing: []
   panelHover: [hovering: boolean]
 }>()
 
@@ -78,7 +86,10 @@ function updateWidth(width: number) {
 
 function toggleExpanded() {
   expanded.value = !expanded.value
-  nextTick(() => initPosition())
+  nextTick(() => {
+    initPosition()
+    scheduleSyncStandaloneWindowSize()
+  })
 }
 
 const panelRef = ref<HTMLDivElement | null>(null)
@@ -89,6 +100,9 @@ const isDragging = ref(false)
 const dragOffset = ref({ x: 0, y: 0 })
 
 function clampPosition(left: number, top: number, panelH: number) {
+  if (props.standaloneWindow) {
+    return { left: 0, top: 0 }
+  }
   const w = panelW.value
   return {
     left: Math.max(12, Math.min(left, window.innerWidth - w - 12)),
@@ -96,11 +110,45 @@ function clampPosition(left: number, top: number, panelH: number) {
   }
 }
 
+let syncSizeGeneration = 0
+let syncSizeRafId: number | null = null
+let panelResizeObserver: ResizeObserver | null = null
+
+async function syncStandaloneWindowSize() {
+  if (!props.standaloneWindow || !panelRef.value) return
+  const generation = ++syncSizeGeneration
+  await nextTick()
+  if (generation !== syncSizeGeneration || !panelRef.value) return
+  const width = panelW.value
+  const height = measureToolbarPanelHeight(panelRef.value)
+  await fitToolbarWindow(width, height)
+}
+
+function probePanelHoverAtScreen(screenX: number, screenY: number) {
+  if (!props.standaloneWindow || !panelRef.value || !positioned.value) return
+  const r = panelRef.value.getBoundingClientRect()
+  const inside = isPointerOverPanelRect(screenX, screenY, window.screenX, window.screenY, r)
+  if (inside) emit('panelHover', true)
+}
+
+function scheduleSyncStandaloneWindowSize() {
+  if (!props.standaloneWindow) return
+  if (syncSizeRafId !== null) cancelAnimationFrame(syncSizeRafId)
+  syncSizeRafId = requestAnimationFrame(() => {
+    syncSizeRafId = null
+    void syncStandaloneWindowSize()
+  })
+}
+
 function syncPanelHover() {
   if (!panelRef.value || !positioned.value) {
     emit('panelHover', false)
     return
   }
+  // Standalone toolbar lives in its own window: pointerX/Y default to (0,0) until the
+  // pointer moves inside that window, so coordinate checks falsely report hover on init.
+  // Hover is driven by pointerenter/leave on the panel instead.
+  if (props.standaloneWindow) return
   const r = panelRef.value.getBoundingClientRect()
   const inside =
     props.pointerX >= r.left && props.pointerX <= r.right && props.pointerY >= r.top && props.pointerY <= r.bottom
@@ -113,13 +161,18 @@ function initPosition() {
     let left: number
     let top: number
     if (props.pinned) {
-      const saved = loadToolbarPosition()
-      if (saved) {
-        left = saved.left
-        top = saved.top
+      if (!props.standaloneWindow) {
+        const saved = loadToolbarPosition(props.standaloneWindow)
+        if (saved) {
+          left = saved.left
+          top = saved.top
+        } else {
+          left = 12
+          top = 12
+        }
       } else {
-        left = 12
-        top = 12
+        left = 0
+        top = 0
       }
     } else {
       left = props.anchorX - panelW.value / 2
@@ -129,55 +182,129 @@ function initPosition() {
     panelLeft.value = clamped.left
     panelTop.value = clamped.top
     positioned.value = true
-    syncPanelHover()
+    if (props.standaloneWindow) {
+      emit('panelHover', false)
+    } else {
+      syncPanelHover()
+    }
+    void syncStandaloneWindowSize()
   })
 }
 
 let cachedPanelH = 400
 let lastDragX = 0
 let lastDragY = 0
+let lastScreenX = 0
+let lastScreenY = 0
 let dragRafId: number | null = null
+let dragPointerId: number | null = null
+let captureTarget: HTMLElement | null = null
+let windowDragOffset = { x: 0, y: 0 }
 
-function startDrag(e: MouseEvent) {
-  isDragging.value = true
-  cachedPanelH = panelRef.value?.offsetHeight ?? 400
-  dragOffset.value = {
-    x: e.clientX - panelLeft.value,
-    y: e.clientY - panelTop.value,
-  }
-  e.preventDefault()
-}
-
-function onDrag(e: MouseEvent) {
-  if (!isDragging.value) return
-  lastDragX = e.clientX
-  lastDragY = e.clientY
+function scheduleDragUpdate() {
   if (dragRafId !== null) return
   dragRafId = requestAnimationFrame(() => {
     dragRafId = null
+    if (!isDragging.value) return
+    if (props.standaloneWindow) {
+      void getCurrentWindow().setPosition(
+        new LogicalPosition(lastScreenX - windowDragOffset.x, lastScreenY - windowDragOffset.y),
+      )
+      return
+    }
     const w = panelW.value
     panelLeft.value = Math.max(0, Math.min(lastDragX - dragOffset.value.x, window.innerWidth - w))
     panelTop.value = Math.max(0, Math.min(lastDragY - dragOffset.value.y, window.innerHeight - cachedPanelH))
   })
 }
 
-function stopDrag() {
+function onDrawingModeClick() {
+  if (props.whiteboardMode || !props.penetrationMode) return
+  emit('togglePenetration')
+}
+
+function onPenetrationModeClick() {
+  if (props.whiteboardMode || props.penetrationMode) return
+  emit('togglePenetration')
+}
+
+function startDrag(e: PointerEvent) {
+  if (e.button !== 0) return
+  isDragging.value = true
+  dragPointerId = e.pointerId
+  captureTarget = e.currentTarget as HTMLElement
+  captureTarget.setPointerCapture(e.pointerId)
+  e.preventDefault()
+  lastDragX = e.clientX
+  lastDragY = e.clientY
+  lastScreenX = e.screenX
+  lastScreenY = e.screenY
+  if (props.standaloneWindow) {
+    windowDragOffset = { x: e.clientX, y: e.clientY }
+    return
+  }
+  cachedPanelH = panelRef.value?.offsetHeight ?? 400
+  dragOffset.value = {
+    x: e.clientX - panelLeft.value,
+    y: e.clientY - panelTop.value,
+  }
+}
+
+function onPointerMove(e: PointerEvent) {
   if (!isDragging.value) return
+  if (dragPointerId !== null && e.pointerId !== dragPointerId) return
+  lastDragX = e.clientX
+  lastDragY = e.clientY
+  lastScreenX = e.screenX
+  lastScreenY = e.screenY
+  scheduleDragUpdate()
+}
+
+function releaseDragCapture() {
+  if (captureTarget && dragPointerId !== null) {
+    try {
+      captureTarget.releasePointerCapture(dragPointerId)
+    } catch {
+      // pointer already released
+    }
+  }
+  captureTarget = null
+  dragPointerId = null
+}
+
+function stopDrag(e?: PointerEvent) {
+  if (!isDragging.value) return
+  if (e && dragPointerId !== null && e.pointerId !== dragPointerId) return
   isDragging.value = false
   if (dragRafId !== null) {
     cancelAnimationFrame(dragRafId)
     dragRafId = null
   }
+  releaseDragCapture()
+  if (props.standaloneWindow) {
+    void (async () => {
+      const win = getCurrentWindow()
+      const [pos, scale] = await Promise.all([win.outerPosition(), win.scaleFactor()])
+      const logical = pos.toLogical(scale)
+      saveToolbarPosition(logical.x, logical.y, true)
+    })()
+    syncPanelHover()
+    return
+  }
   if (props.pinned) {
-    saveToolbarPosition(panelLeft.value, panelTop.value)
+    saveToolbarPosition(panelLeft.value, panelTop.value, props.standaloneWindow)
   }
   syncPanelHover()
 }
 
-defineExpose({ syncPanelHover })
+function stopDragOnBlur() {
+  stopDrag()
+}
+
+defineExpose({ syncPanelHover, syncStandaloneWindowSize, probePanelHoverAtScreen })
 
 watch(
-  () => [props.layout, props.pinned] as const,
+  () => [props.layout, props.pinned, props.standaloneWindow] as const,
   () => {
     expanded.value = false
     positioned.value = false
@@ -185,16 +312,40 @@ watch(
   },
 )
 
+watch(panelW, () => {
+  if (props.standaloneWindow && positioned.value) {
+    scheduleSyncStandaloneWindowSize()
+  }
+})
+
 onMounted(() => {
   initPosition()
-  window.addEventListener('mousemove', onDrag)
-  window.addEventListener('mouseup', stopDrag)
+  window.addEventListener('pointermove', onPointerMove)
+  window.addEventListener('pointerup', stopDrag)
+  window.addEventListener('pointercancel', stopDrag)
+  window.addEventListener('blur', stopDragOnBlur)
+  if (props.standaloneWindow && typeof ResizeObserver !== 'undefined') {
+    panelResizeObserver = new ResizeObserver(() => scheduleSyncStandaloneWindowSize())
+    nextTick(() => {
+      if (panelRef.value) panelResizeObserver?.observe(panelRef.value)
+    })
+  }
 })
 
 onUnmounted(() => {
+  syncSizeGeneration += 1
+  if (syncSizeRafId !== null) {
+    cancelAnimationFrame(syncSizeRafId)
+    syncSizeRafId = null
+  }
+  panelResizeObserver?.disconnect()
+  panelResizeObserver = null
   emit('panelHover', false)
-  window.removeEventListener('mousemove', onDrag)
-  window.removeEventListener('mouseup', stopDrag)
+  window.removeEventListener('pointermove', onPointerMove)
+  window.removeEventListener('pointerup', stopDrag)
+  window.removeEventListener('pointercancel', stopDrag)
+  window.removeEventListener('blur', stopDragOnBlur)
+  stopDrag()
   if (dragRafId !== null) {
     cancelAnimationFrame(dragRafId)
     dragRafId = null
@@ -204,29 +355,69 @@ onUnmounted(() => {
 
 <template>
   <div
-    class="fixed top-0 left-0 w-screen h-screen z-100001"
-    :class="pinned ? 'pointer-events-none' : ''"
-    @mousedown.self="!pinned && emit('close')"
+    class="z-100001"
+    :class="
+      standaloneWindow
+        ? 'block w-fit h-fit overflow-hidden'
+        : ['fixed top-0 left-0 w-screen h-screen', pinned ? 'pointer-events-none' : '']
+    "
+    @mousedown.self="!pinned && !standaloneWindow && emit('close')"
   >
     <div
       ref="panelRef"
-      class="absolute left-0 top-0"
-      :class="pinned ? 'pointer-events-auto' : ''"
-      :style="{
-        width: panelW + 'px',
-        transform: `translate3d(${panelLeft}px,${panelTop}px,0)`,
-        willChange: isDragging ? 'transform' : 'auto',
-        opacity: positioned ? 1 : 0,
-      }"
+      :class="standaloneWindow ? 'relative' : 'absolute left-0 top-0'"
+      :style="
+        standaloneWindow
+          ? { width: panelW + 'px' }
+          : {
+              width: panelW + 'px',
+              transform: `translate3d(${panelLeft}px,${panelTop}px,0)`,
+              willChange: isDragging ? 'transform' : 'auto',
+              opacity: positioned ? 1 : 0,
+            }
+      "
       @mousedown.stop
-      @mouseenter="emit('panelHover', true)"
-      @mouseleave="emit('panelHover', false)"
+      @pointerenter="emit('panelHover', true)"
+      @pointerleave="emit('panelHover', false)"
     >
-      <div class="overlay-panel-surface overlay-panel w-full">
-        <div class="h-2.5 cursor-default" @mousedown="startDrag" />
+      <div
+        class="overlay-panel-surface w-full"
+        :class="standaloneWindow ? 'overlay-panel overlay-panel--standalone' : 'overlay-panel'"
+      >
+        <div
+          class="h-2.5 cursor-grab active:cursor-grabbing"
+          :class="isDragging ? 'cursor-grabbing' : ''"
+          @pointerdown="startDrag"
+        />
 
         <!-- Actions -->
-        <div class="px-3 pt-1 pb-2 flex items-center gap-1 cursor-default" @mousedown="startDrag">
+        <div class="px-3 pt-1 pb-2 flex items-center gap-1 cursor-default">
+          <button
+            v-if="standaloneWindow"
+            type="button"
+            class="overlay-toolbar-action"
+            :class="!penetrationMode ? 'overlay-toolbar-action--active' : ''"
+            :title="t('toolbar.drawingMode')"
+            :aria-label="t('toolbar.drawingMode')"
+            :aria-pressed="!penetrationMode"
+            :disabled="whiteboardMode"
+            @click="onDrawingModeClick"
+          >
+            <component :is="TOOL_DEFS[0].icon" :size="15" />
+          </button>
+          <button
+            v-if="standaloneWindow"
+            type="button"
+            class="overlay-toolbar-action"
+            :class="penetrationMode ? 'overlay-toolbar-action--active' : ''"
+            :title="t('toolbar.penetrationMode')"
+            :aria-label="t('toolbar.penetrationMode')"
+            :aria-pressed="!!penetrationMode"
+            :disabled="whiteboardMode"
+            @click="onPenetrationModeClick"
+          >
+            <MousePointer2 :size="15" />
+          </button>
           <button
             type="button"
             class="overlay-toolbar-action"
@@ -257,7 +448,11 @@ onUnmounted(() => {
           >
             <Trash2 :size="15" />
           </button>
-          <span class="flex-1" />
+          <span
+            class="flex-1 self-stretch min-h-7 cursor-grab active:cursor-grabbing"
+            :class="isDragging ? 'cursor-grabbing' : ''"
+            @pointerdown="startDrag"
+          />
           <button
             type="button"
             class="overlay-toolbar-action"
@@ -276,6 +471,16 @@ onUnmounted(() => {
             @click="emit('copy')"
           >
             <Copy :size="15" />
+          </button>
+          <button
+            v-if="standaloneWindow"
+            type="button"
+            class="overlay-toolbar-action"
+            :title="t('toolbar.exit')"
+            :aria-label="t('toolbar.exit')"
+            @click="emit('exitDrawing')"
+          >
+            <X :size="15" />
           </button>
         </div>
 
@@ -299,7 +504,7 @@ onUnmounted(() => {
 
         <!-- Detailed tools -->
         <div v-else class="px-3.5 pt-0 pb-2.5">
-          <div class="flex items-center justify-between mb-2 cursor-default" @mousedown="startDrag">
+          <div class="flex items-center justify-between mb-2 cursor-default" @pointerdown="startDrag">
             <span class="text-[11px] font-semibold overlay-text-section tracking-[0.5px] font-sans">{{
               t('panel.tools')
             }}</span>

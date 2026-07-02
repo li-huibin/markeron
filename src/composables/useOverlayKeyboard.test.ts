@@ -38,6 +38,7 @@ function createActions(): KeyboardActions & { calls: Record<string, unknown[][]>
     redo: make('redo') as KeyboardActions['redo'],
     clearAll: make('clearAll') as KeyboardActions['clearAll'],
     exitDrawing: make('exitDrawing') as KeyboardActions['exitDrawing'],
+    togglePenetrationMode: make('togglePenetrationMode') as KeyboardActions['togglePenetrationMode'],
     enterWhiteboardMode: make('enterWhiteboardMode') as KeyboardActions['enterWhiteboardMode'],
     exitWhiteboardMode: make('exitWhiteboardMode') as KeyboardActions['exitWhiteboardMode'],
     copyScreen: make('copyScreen') as KeyboardActions['copyScreen'],
@@ -160,6 +161,17 @@ describe('useOverlayKeyboard', () => {
       expect(actions.calls.exitDrawing).toHaveLength(1)
     })
 
+    it('X toggles penetration mode', () => {
+      handler(key('x'))
+      expect(actions.calls.togglePenetrationMode).toHaveLength(1)
+    })
+
+    it('X does not toggle penetration mode in whiteboard mode', () => {
+      ctx.whiteboardMode.value = true
+      handler(key('x'))
+      expect(actions.calls.togglePenetrationMode).toHaveLength(0)
+    })
+
     it('Escape exits whiteboard mode when active', () => {
       ctx.whiteboardMode.value = true
       handler(key('Escape'))
@@ -172,6 +184,7 @@ describe('useOverlayKeyboard', () => {
       handler(key('Delete'))
       handler(key('Escape'))
       expect(actions.calls.clearAll).toHaveLength(0)
+      expect(actions.calls.togglePenetrationMode).toHaveLength(0)
       expect(actions.calls.exitDrawing).toHaveLength(0)
       expect(actions.calls.exitWhiteboardMode).toHaveLength(0)
     })
