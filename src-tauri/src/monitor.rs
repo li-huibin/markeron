@@ -1,3 +1,69 @@
+use serde::Serialize;
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OverlayPointerPosition {
+    pub x: f64,
+    pub y: f64,
+    pub screen_x: i32,
+    pub screen_y: i32,
+}
+
+/// Screen-space cursor position in physical/global pixels (or platform equivalent).
+#[cfg(target_os = "windows")]
+pub fn get_cursor_screen_pos() -> Option<(i32, i32)> {
+    use crate::win32::{GetCursorPos, POINT};
+    unsafe {
+        let mut pt = POINT { x: 0, y: 0 };
+        if GetCursorPos(&mut pt) == 0 {
+            return None;
+        }
+        Some((pt.x, pt.y))
+    }
+}
+
+#[cfg(target_os = "macos")]
+pub fn get_cursor_screen_pos() -> Option<(i32, i32)> {
+    #[repr(C)]
+    struct CGPoint {
+        x: f64,
+        y: f64,
+    }
+    extern "C" {
+        fn CGEventCreate(source: *const std::ffi::c_void) -> *mut std::ffi::c_void;
+        fn CGEventGetLocation(event: *const std::ffi::c_void) -> CGPoint;
+        fn CFRelease(cf: *const std::ffi::c_void);
+    }
+
+    unsafe {
+        let event = CGEventCreate(std::ptr::null());
+        if event.is_null() {
+            return None;
+        }
+        let pt = CGEventGetLocation(event);
+        CFRelease(event);
+        Some((pt.x as i32, pt.y as i32))
+    }
+}
+
+#[cfg(not(any(target_os = "windows", target_os = "macos")))]
+pub fn get_cursor_screen_pos() -> Option<(i32, i32)> {
+    let (x, y, w, h) = get_cursor_monitor_rect()?;
+    Some((x + w as i32 / 2, y + h as i32 / 2))
+}
+
+/// Cursor position in overlay client coordinates (relative to the cursor monitor origin).
+pub fn get_overlay_client_pointer() -> Option<OverlayPointerPosition> {
+    let (screen_x, screen_y) = get_cursor_screen_pos()?;
+    let (mon_x, mon_y, _, _) = get_cursor_monitor_rect()?;
+    Some(OverlayPointerPosition {
+        x: (screen_x - mon_x) as f64,
+        y: (screen_y - mon_y) as f64,
+        screen_x,
+        screen_y,
+    })
+}
+
 /// Returns (x, y, width, height) of the monitor containing the cursor.
 #[cfg(target_os = "windows")]
 pub fn get_cursor_monitor_rect() -> Option<(i32, i32, u32, u32)> {

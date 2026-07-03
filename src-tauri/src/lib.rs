@@ -115,6 +115,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::get_config,
+            commands::get_overlay_pointer_position,
             commands::save_shortcuts,
             commands::save_general,
             commands::save_locale,

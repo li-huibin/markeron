@@ -128,7 +128,7 @@ function probePanelHoverAtScreen(screenX: number, screenY: number) {
   if (!props.standaloneWindow || !panelRef.value || !positioned.value) return
   const r = panelRef.value.getBoundingClientRect()
   const inside = isPointerOverPanelRect(screenX, screenY, window.screenX, window.screenY, r)
-  if (inside) emit('panelHover', true)
+  emit('panelHover', inside)
 }
 
 function scheduleSyncStandaloneWindowSize() {

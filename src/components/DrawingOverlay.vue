@@ -323,6 +323,29 @@ function emitPointerScreenForToolbar() {
   void emit(OVERLAY_POINTER_SCREEN_EVENT, { x: lastScreenX, y: lastScreenY })
 }
 
+async function seedPointerPosition() {
+  try {
+    const pos = await invoke<{
+      x: number
+      y: number
+      screenX: number
+      screenY: number
+    } | null>('get_overlay_pointer_position')
+    if (!pos) return
+    lastPointerX = pos.x
+    lastPointerY = pos.y
+    lastScreenX = pos.screenX
+    lastScreenY = pos.screenY
+    pointerScreenKnown = true
+    mousePos.value = { x: pos.x, y: pos.y }
+    if (active.value && !penetrationMode.value && !toolbarPanelHovered.value) {
+      updateCursorEl(pos.x, pos.y)
+    }
+  } catch (error) {
+    console.error('Failed to seed pointer position:', error)
+  }
+}
+
 function onGlobalPointerMove(e: PointerEvent) {
   lastPointerX = e.clientX
   lastPointerY = e.clientY
@@ -670,28 +693,36 @@ function updateCursorEl(x: number, y: number) {
   cursorEl.value.style.transform = `translate(${x - hx}px, ${y - hy}px)`
 }
 
-// CSS cursor for the canvas: 'none' when our SVG overlay handles it
-const canvasCursor = computed(() => {
-  const showDragCursor =
+const showDragCursor = computed(
+  () =>
     isDragEnabled(dragMode.value) &&
     (isMoving.value ||
-      (hoveredActionInfo.value && !isDrawing.value && (dragMode.value === 'hover' || pointerModDown.value)))
-  if (showDragCursor) return 'move'
-  if (currentTool.value === 'text') return 'text'
-  if (showQuickColors.value) return 'default'
-  return 'none'
-})
+      (hoveredActionInfo.value && !isDrawing.value && (dragMode.value === 'hover' || pointerModDown.value))),
+)
 
-const showCustomCursor = computed(
+const wantsCustomCursor = computed(
   () =>
     active.value &&
     !penetrationMode.value &&
-    canvasCursor.value === 'none' &&
     !textBoxPos.value &&
     !hideUiForCapture.value &&
     !showQuickColors.value &&
-    !toolbarPanelHovered.value,
+    !toolbarPanelHovered.value &&
+    !showDragCursor.value &&
+    currentTool.value !== 'text',
 )
+
+// Use system cursor as fallback whenever the SVG overlay cursor is suppressed.
+const canvasCursor = computed(() => {
+  if (penetrationMode.value) return 'default'
+  if (showDragCursor.value) return 'move'
+  if (currentTool.value === 'text') return 'text'
+  if (showQuickColors.value) return 'default'
+  if (wantsCustomCursor.value) return 'none'
+  return 'default'
+})
+
+const showCustomCursor = computed(() => wantsCustomCursor.value)
 
 // Fix cursor offset when switching tools/colors via shortcut while pointer is stationary
 watch([currentTool, currentColor], () => {
@@ -882,6 +913,7 @@ onMounted(async () => {
           applyDefaultEntryOnActivate()
           nextTick(() => resizeCanvas())
         }
+        void seedPointerPosition()
         nextTick(() => {
           if (showCustomCursor.value) {
             updateCursorEl(lastPointerX, lastPointerY)
