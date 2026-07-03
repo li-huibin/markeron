@@ -30,6 +30,14 @@
 
 **[Download Latest Release](https://github.com/ifer47/markeron/releases/latest)** — pick the installer for your platform from the assets list.
 
+Windows users can also install the Microsoft Store version with WinGet:
+
+```powershell
+winget install --id 9N6623X973JV --source msstore
+```
+
+> Official downloads are GitHub Releases and Microsoft Store. Third-party mirrors may be outdated or repackaged.
+
 > After launching, the app runs silently in the **system tray** with no window shown.
 
 ## Features

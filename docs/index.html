@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MarkerOn - Lightweight Screen Annotation Tool</title>
+    <meta
+      name="description"
+      content="MarkerOn is a lightweight open-source screen annotation tool with click-through mode, whiteboard mode, and keyboard-first drawing for Windows, macOS, and Linux."
+    />
+    <meta
+      name="keywords"
+      content="screen annotation tool, ZoomIt alternative, Epic Pen alternative, desktop whiteboard, Tauri app, screen drawing"
+    />
+    <meta property="og:title" content="MarkerOn - Lightweight Screen Annotation Tool" />
+    <meta
+      property="og:description"
+      content="Draw, highlight, and annotate anywhere on your desktop. v1.0 adds click-through mode so annotations stay visible while you interact with apps below."
+    />
+    <meta property="og:image" content="assets/hero.png" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="assets/icon.png" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header" aria-label="Primary navigation">
+      <a class="brand" href="#top" aria-label="MarkerOn home">
+        <img src="assets/icon.png" width="32" height="32" alt="" />
+        <span>MarkerOn</span>
+      </a>
+      <nav class="nav-links" aria-label="Product links">
+        <a href="#features">Features</a>
+        <a href="#download">Download</a>
+        <a href="#faq">FAQ</a>
+        <a href="https://github.com/ifer47/markeron">GitHub</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero" aria-labelledby="hero-title">
+        <img class="hero-image" src="assets/hero.png" alt="MarkerOn drawing over a desktop screen" />
+        <div class="hero-shade" aria-hidden="true"></div>
+        <div class="hero-content">
+          <p class="eyebrow">Open source · Tauri v2 · around 1.5 MB</p>
+          <h1 id="hero-title">MarkerOn</h1>
+          <p class="hero-copy">
+            A keyboard-first screen annotation tool for demos, teaching, meetings, and recordings. Draw anywhere, then
+            switch to click-through mode without hiding your annotations.
+          </p>
+          <div class="hero-actions" aria-label="Download actions">
+            <a class="button primary" href="https://github.com/ifer47/markeron/releases/latest">Download latest</a>
+            <a
+              class="button secondary"
+              href="https://get.microsoft.com/installer/download/9n6623x973jv?referrer=appbadge"
+            >
+              Microsoft Store
+            </a>
+          </div>
+        </div>
+        <div class="hero-strip" aria-label="Core capabilities">
+          <span>8 drawing tools</span>
+          <span>Click-through mode</span>
+          <span>Whiteboard mode</span>
+          <span>Windows · macOS · Linux</span>
+        </div>
+      </section>
+
+      <section class="proof-band" aria-label="Why MarkerOn">
+        <div class="proof-item">
+          <strong>Instant</strong>
+          <span>Press Ctrl+Shift+D and start drawing over any app.</span>
+        </div>
+        <div class="proof-item">
+          <strong>Unintrusive</strong>
+          <span>Runs quietly in the tray, with no account, telemetry, or cloud dependency.</span>
+        </div>
+        <div class="proof-item">
+          <strong>Precise</strong>
+          <span>Keyboard shortcuts, angle snapping, custom widths, and undo/redo stay close at hand.</span>
+        </div>
+      </section>
+
+      <section class="feature-section" id="features" aria-labelledby="features-title">
+        <div class="section-heading">
+          <p class="eyebrow">Built for live explanation</p>
+          <h2 id="features-title">Keep the screen moving while your marks stay put.</h2>
+        </div>
+        <div class="feature-grid">
+          <article class="feature">
+            <h3>Click-through mode</h3>
+            <p>
+              Toggle drawing and pointer modes from the toolbar or with Ctrl+Shift+X. Annotations remain visible while
+              clicks, scrolls, and typing go to the app underneath.
+            </p>
+          </article>
+          <article class="feature">
+            <h3>Keyboard-first tools</h3>
+            <p>
+              Switch tools with number keys, adjust width with Ctrl+scroll, cycle colors with Q/E, and clear or copy
+              without opening menus.
+            </p>
+          </article>
+          <article class="feature">
+            <h3>Whiteboard when needed</h3>
+            <p>
+              Press W for a clean whiteboard, keep content between sessions, and copy the result as an image for docs,
+              chats, and notes.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="media-row" aria-label="Product screenshots">
+        <figure>
+          <img src="assets/tools.png" alt="MarkerOn annotation tools" />
+          <figcaption>Pen, highlighter, arrow, shapes, eraser, text, and color controls.</figcaption>
+        </figure>
+        <figure>
+          <img src="assets/settings.png" alt="MarkerOn settings panel" />
+          <figcaption>Configure toolbar behavior, whiteboard content, drag modes, shortcuts, and startup.</figcaption>
+        </figure>
+      </section>
+
+      <section class="download-section" id="download" aria-labelledby="download-title">
+        <div>
+          <p class="eyebrow">Official downloads</p>
+          <h2 id="download-title">Get MarkerOn from a trusted source.</h2>
+          <p>
+            Third-party reposts may lag behind or repackage old installers. Use GitHub Releases or Microsoft Store for
+            the latest version and update path.
+          </p>
+        </div>
+        <div class="download-actions">
+          <a class="download-link" href="https://github.com/ifer47/markeron/releases/latest">
+            <span>GitHub Releases</span>
+            <small>Windows, macOS, Linux assets</small>
+          </a>
+          <a class="download-link" href="https://get.microsoft.com/installer/download/9n6623x973jv?referrer=appbadge">
+            <span>Microsoft Store</span>
+            <small>Windows install and updates</small>
+          </a>
+          <a class="download-link" href="https://github.com/ifer47/markeron">
+            <span>Source code</span>
+            <small>MIT licensed on GitHub</small>
+          </a>
+        </div>
+      </section>
+
+      <section class="faq-section" id="faq" aria-labelledby="faq-title">
+        <div class="section-heading">
+          <p class="eyebrow">Common questions</p>
+          <h2 id="faq-title">For people comparing ZoomIt, Epic Pen, and lightweight whiteboards.</h2>
+        </div>
+        <div class="faq-list">
+          <details>
+            <summary>Is MarkerOn a ZoomIt alternative?</summary>
+            <p>
+              MarkerOn focuses on fast annotation, keyboard control, and click-through drawing. It works well alongside
+              Windows Magnifier if you need zoom during a presentation.
+            </p>
+          </details>
+          <details>
+            <summary>Does it have Epic Pen-style mouse mode?</summary>
+            <p>
+              Yes. v1.0 adds click-through mode, so annotations stay visible while you use the apps below, then switch
+              back to drawing whenever needed.
+            </p>
+          </details>
+          <details>
+            <summary>Does it upload screenshots or require an account?</summary>
+            <p>
+              No. MarkerOn is local-first, open source, and does not require an account. Annotation content stays on
+              your machine.
+            </p>
+          </details>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>MarkerOn is open source under the MIT License.</span>
+      <a href="https://github.com/ifer47/markeron/issues">Feedback and issues</a>
+    </footer>
+  </body>
+</html>

@@ -29,6 +29,14 @@
 
 **[下载最新版本](https://github.com/ifer47/markeron/releases/latest)** — 在 Assets 列表中选择对应平台的安装包下载。
 
+Windows 用户也可以通过 WinGet 安装微软商店版本：
+
+```powershell
+winget install --id 9N6623X973JV --source msstore
+```
+
+> 官方下载渠道为 GitHub Releases 和微软商店。第三方镜像或网盘可能版本滞后，或存在被重新打包的风险。
+
 > 启动后应用静默运行在 **系统托盘**，不会弹出任何窗口。
 
 ## 功能一览

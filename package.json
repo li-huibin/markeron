@@ -52,7 +52,9 @@
   },
   "lint-staged": {
     "*.{ts,vue,css}": [
-      "prettier --write",
+      "prettier --write"
+    ],
+    "*.{ts,vue}": [
       "oxlint"
     ],
     "*.json": [
