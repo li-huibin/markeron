@@ -36,7 +36,8 @@
 
 - **Annotate anywhere** — draw over any app, including the taskbar
 - **8 tools** — pen, highlighter, arrow, rectangle, ellipse, line, eraser, text
-- **Flexible toolbar** — press <kbd>Space</kbd> to toggle, or enable **always-on** in Settings; simple or detailed layout with undo, copy, and whiteboard actions in-panel
+- **Flexible toolbar** — press <kbd>Space</kbd> to toggle, or enable **always-on** in Settings; simple or detailed layout with undo, copy, and whiteboard actions in-panel; **independent floating window** with drawing / click-through toggles
+- **Click-through mode** — interact with apps below while staying in the session; toggle via toolbar buttons, <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd> (global), or <kbd>X</kbd> while drawing; disabled in whiteboard mode
 - **Full keyboard control** — every action has a shortcut, no menus needed
 - **Preserve drawings** — enable **Keep after exit** under Whiteboard & content to resume on re-enter
 - **Whiteboard mode** — set default entry to whiteboard, or press <kbd>W</kbd> to toggle; content rules are in **Whiteboard & content** settings
@@ -67,6 +68,7 @@ On **macOS**, use <kbd>Command</kbd> (⌘) in place of <kbd>Ctrl</kbd>, and <kbd
 | :--- | :--- | :--- |
 | Toggle annotation mode | <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd> | <kbd>Command</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd> |
 | Clear all annotations | <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>C</kbd> | <kbd>Command</kbd> + <kbd>Shift</kbd> + <kbd>C</kbd> |
+| Toggle click-through mode | <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>X</kbd> | <kbd>Command</kbd> + <kbd>Shift</kbd> + <kbd>X</kbd> |
 
 ### Tool Switching
 
@@ -82,6 +84,7 @@ On **macOS**, use <kbd>Command</kbd> (⌘) in place of <kbd>Ctrl</kbd>, and <kbd
 | Action | Windows | macOS |
 | :--- | :--- | :--- |
 | Toolbar (toggle) | <kbd>Space</kbd> | <kbd>Space</kbd> |
+| Click-through (while drawing) | <kbd>X</kbd> | <kbd>X</kbd> |
 | Toolbar always-on / layout | Settings → General | Settings → General |
 | Copy screen | <kbd>Ctrl</kbd> + <kbd>C</kbd> | <kbd>Command</kbd> + <kbd>C</kbd> |
 | Whiteboard toggle | <kbd>W</kbd> | <kbd>W</kbd> |
@@ -140,7 +143,8 @@ On **macOS**, use <kbd>Command</kbd> (⌘) in place of <kbd>Ctrl</kbd>, and <kbd
 
 ## Settings
 
-- **Toolbar display** — press <kbd>Space</kbd> to toggle, or always-on (Space does nothing when pinned)
+- **Toolbar display** — press <kbd>Space</kbd> to toggle, or always-on (Space does nothing when pinned); floating toolbar window with drawing / click-through buttons
+- **Click-through** — pass mouse events to apps below; toggle in toolbar, with <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd> or <kbd>X</kbd> (not in whiteboard mode)
 - **Toolbar layout** — simple (expand with **More**) or detailed
 - **Whiteboard & content** — default entry (screen / whiteboard), keep after exit, keep on <kbd>W</kbd> toggle
 - **Element dragging** — off, hover to drag, or hold <kbd>Ctrl</kbd>/<kbd>Command</kbd> to drag (disabled while eraser is selected)
@@ -174,17 +178,20 @@ npm run build
 markeron/
 ├── src-tauri/
 │   ├── src/
-│   │   └── lib.rs               # Rust backend — window management, shortcuts, tray
+│   │   ├── overlay.rs           # Overlay session state, toolbar window, click-through
+│   │   └── lib.rs               # Rust backend — tray, shortcuts, IPC
 │   └── tauri.conf.json          # Tauri configuration
 │
 ├── src/
 │   ├── components/
 │   │   ├── DrawingOverlay.vue   # Drawing overlay (Canvas + interactions)
+│   │   ├── ToolbarWindow.vue    # Standalone toolbar window host
 │   │   ├── ToolToolbar.vue      # Annotation toolbar (tool / color / stroke)
 │   │   ├── SettingsView.vue     # Settings window (shortcut config / sidebar layout)
 │   │   └── TextBox.vue          # Inline text input
 │   ├── composables/
-│   │   └── useDrawing.ts        # Drawing engine (pen, shapes, text, undo/redo)
+│   │   ├── useDrawing.ts        # Drawing engine (pen, shapes, text, undo/redo)
+│   │   └── overlayBridge.ts     # Cross-window overlay ↔ toolbar events
 │   ├── types/
 │   │   └── app.d.ts             # TypeScript type declarations
 │   ├── App.vue                  # Root component

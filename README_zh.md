@@ -35,7 +35,8 @@
 
 - **随处标注** — 在任何应用上方绘制，覆盖全屏包括任务栏
 - **8 种工具** — 画笔、荧光笔、箭头、矩形、椭圆、直线、橡皮擦、文字
-- **灵活工具栏** — 按 <kbd>Space</kbd> 呼出，或在设置中**常驻显示**；支持简约 / 详细布局，面板内可撤销、复制、切换白板
+- **灵活工具栏** — 按 <kbd>Space</kbd> 呼出，或在设置中**常驻显示**；支持简约 / 详细布局，面板内可撤销、复制、切换白板；**独立浮动窗口**，含绘制 / 穿透模式切换按钮
+- **穿透模式** — 标注会话中可点击下层应用；工具栏按钮、<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd>（全局）或 <kbd>X</kbd>（绘制中）切换；白板模式下不可用
 - **全键盘操控** — 每个操作都有快捷键，无需菜单
 - **保留标注** — 可在「白板与内容」中开启退出后保留；下次进入自动恢复
 - **白板模式** — 可设为默认进入白板，或按 <kbd>W</kbd> 切换；内容与切换行为均在「白板与内容」中配置
@@ -66,6 +67,7 @@ MarkerOn 基于 Rust + Canvas 构建，安装包仅 ~1.5 MB，运行时内存占
 | :--- | :--- | :--- |
 | 开启 / 退出标注模式 | <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd> | <kbd>Command</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd> |
 | 清除所有标注 | <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>C</kbd> | <kbd>Command</kbd> + <kbd>Shift</kbd> + <kbd>C</kbd> |
+| 切换穿透模式 | <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>X</kbd> | <kbd>Command</kbd> + <kbd>Shift</kbd> + <kbd>X</kbd> |
 
 ### 工具切换
 
@@ -81,6 +83,7 @@ MarkerOn 基于 Rust + Canvas 构建，安装包仅 ~1.5 MB，运行时内存占
 | 功能 | Windows | macOS |
 | :--- | :--- | :--- |
 | 呼出工具栏 | <kbd>Space</kbd> | <kbd>Space</kbd> |
+| 穿透模式（绘制中） | <kbd>X</kbd> | <kbd>X</kbd> |
 | 工具栏常驻 / 布局 | 设置 → 常规 | 设置 → 常规 |
 | 复制屏幕 | <kbd>Ctrl</kbd> + <kbd>C</kbd> | <kbd>Command</kbd> + <kbd>C</kbd> |
 | 白板模式切换 | <kbd>W</kbd> | <kbd>W</kbd> |
@@ -139,7 +142,8 @@ MarkerOn 基于 Rust + Canvas 构建，安装包仅 ~1.5 MB，运行时内存占
 
 ## 设置
 
-- **工具栏显示** — 按 <kbd>Space</kbd> 呼出，或常驻显示（常驻时 Space 不再切换）
+- **工具栏显示** — 按 <kbd>Space</kbd> 呼出，或常驻显示（常驻时 Space 不再切换）；独立浮动工具栏窗口，含绘制 / 穿透切换按钮
+- **穿透模式** — 鼠标事件穿透到下层应用；可在工具栏切换，或用 <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd> / <kbd>X</kbd>（白板模式下不可用）
 - **工具栏布局** — 简约（点「更多」展开）或详细
 - **白板与内容** — 默认进入（屏幕标注 / 白板）、退出标注后保留、按 <kbd>W</kbd> 切换时保留
 - **元素拖拽** — 关闭、悬停拖动，或按住 <kbd>Ctrl</kbd>/<kbd>Command</kbd> 才拖动（橡皮擦工具下不触发）
@@ -173,17 +177,20 @@ npm run build
 markeron/
 ├── src-tauri/
 │   ├── src/
-│   │   └── lib.rs               # Rust 后端 — 窗口管理、快捷键、托盘
+│   │   ├── overlay.rs           # 标注会话状态、工具栏窗口、穿透模式
+│   │   └── lib.rs               # Rust 后端 — 托盘、快捷键、IPC
 │   └── tauri.conf.json          # Tauri 配置文件
 │
 ├── src/
 │   ├── components/
 │   │   ├── DrawingOverlay.vue   # 绘图覆盖层（Canvas + 交互）
+│   │   ├── ToolbarWindow.vue    # 独立工具栏窗口
 │   │   ├── ToolToolbar.vue      # 标注模式工具面板（工具 / 颜色 / 线宽）
 │   │   ├── SettingsView.vue     # 设置窗口（快捷键配置 / 侧边栏布局）
 │   │   └── TextBox.vue          # 内联文字输入框
 │   ├── composables/
-│   │   └── useDrawing.ts        # 绘图引擎（画笔、形状、文字、撤销重做）
+│   │   ├── useDrawing.ts        # 绘图引擎（画笔、形状、文字、撤销重做）
+│   │   └── overlayBridge.ts     # 覆盖层 ↔ 工具栏跨窗口事件
 │   ├── types/
 │   │   └── app.d.ts             # TypeScript 类型声明
 │   ├── App.vue                  # 根组件

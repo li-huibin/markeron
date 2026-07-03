@@ -182,7 +182,7 @@ export default {
     editAndOther: '编辑与其他',
     settingsPanel: '工具栏（Space 呼出）',
     toolbarOptionsHint:
-      '可在「常规」设置中选择常驻显示或 Space 呼出，以及简约 / 详细布局；简约模式下点「更多」展开完整选项。常驻时 Space 不再切换工具栏。',
+      '可在「常规」设置中选择常驻显示或 Space 呼出，以及简约 / 详细布局；简约模式下点「更多」展开完整选项。常驻时 Space 不再切换工具栏。工具栏为独立浮动窗口，顶部画笔 / 指针按钮可切换绘制与穿透模式。',
     copyScreen: '复制屏幕到剪贴板',
     undo: '撤销',
     redo: '重做',

@@ -187,7 +187,7 @@ export default {
     editAndOther: 'Edit & Other',
     settingsPanel: 'Toolbar (Space to toggle)',
     toolbarOptionsHint:
-      'In General settings, choose always-on or Space toggle, and simple or detailed layout. In simple mode, use More for the full panel. Space does nothing when the toolbar is always on.',
+      'In General settings, choose always-on or Space toggle, and simple or detailed layout. In simple mode, use More for the full panel. Space does nothing when the toolbar is always on. The toolbar is a separate floating window — use the pen / pointer buttons at the top to switch drawing and click-through mode.',
     copyScreen: 'Copy screen to clipboard',
     undo: 'Undo',
     redo: 'Redo',
