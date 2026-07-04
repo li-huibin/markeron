@@ -754,6 +754,18 @@ export function useDrawing(
     flushRender()
   }
 
+  function cancelDraw() {
+    if (!isDrawing.value) return
+    isDrawing.value = false
+    currentAction.value = null
+    clearStrokeCanvas()
+    objectEraserBatch = []
+    objectEraserRemovedSet = new Set()
+    objectEraserLastProcessedPt = 0
+    previewDirty = true
+    flushRender()
+  }
+
   function drawActionOn(ctx: CanvasRenderingContext2D, action: DrawAction) {
     if (action.tool !== 'eraser' && action.attachedErasers?.length) {
       const bbox = action.bbox
@@ -1200,6 +1212,7 @@ export function useDrawing(
     draw,
     drawBatch,
     endDraw,
+    cancelDraw,
     findActionAt,
     removeAction,
     addTextAction,

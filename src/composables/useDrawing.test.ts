@@ -144,6 +144,15 @@ describe('useDrawing', () => {
       drawing.undo()
       drawing.redo()
     })
+
+    it('cancelDraw discards in-progress stroke without adding to history', () => {
+      drawing.startDraw({ x: 10, y: 10 })
+      drawing.draw({ x: 20, y: 20 })
+      drawing.cancelDraw()
+
+      expect(drawing.isDrawing.value).toBe(false)
+      expect(drawing.canUndo.value).toBe(false)
+    })
   })
 
   describe('undo / redo', () => {

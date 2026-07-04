@@ -10,6 +10,7 @@ import {
   TOOLBAR_ACTION_EVENT,
   OVERLAY_STATE_REQUEST_EVENT,
   TOOLBAR_PANEL_HOVER_EVENT,
+  TOOLBAR_POINTER_UP_EVENT,
   OVERLAY_POINTER_SCREEN_EVENT,
   emitOverlayState,
   type ToolbarAction,
@@ -312,6 +313,7 @@ let hoverRafId: number | null = null
 let isDragging = false
 let dragStartX = 0
 let dragStartY = 0
+let capturedPointerId: number | null = null
 let lastPointerX = 0
 let lastPointerY = 0
 let lastScreenX = 0
@@ -323,6 +325,15 @@ const customCursorPositionReady = ref(true)
 function emitPointerScreenForToolbar() {
   if (!pointerScreenKnown) return
   void emit(OVERLAY_POINTER_SCREEN_EVENT, { x: lastScreenX, y: lastScreenY })
+}
+
+let pointerScreenRafId: number | null = null
+function scheduleEmitPointerScreenForToolbar() {
+  if (pointerScreenRafId !== null) return
+  pointerScreenRafId = requestAnimationFrame(() => {
+    pointerScreenRafId = null
+    emitPointerScreenForToolbar()
+  })
 }
 
 async function seedPointerPosition() {
@@ -345,6 +356,11 @@ async function seedPointerPosition() {
   }
 }
 
+function onGlobalPointerUp(e: PointerEvent) {
+  if (capturedPointerId === null || e.pointerId !== capturedPointerId) return
+  onPointerUp(e)
+}
+
 function onGlobalPointerMove(e: PointerEvent) {
   lastPointerX = e.clientX
   lastPointerY = e.clientY
@@ -352,6 +368,9 @@ function onGlobalPointerMove(e: PointerEvent) {
   lastScreenY = e.screenY
   pointerScreenKnown = true
   mousePos.value = { x: e.clientX, y: e.clientY }
+  if (sessionActive.value && !penetrationMode.value) {
+    scheduleEmitPointerScreenForToolbar()
+  }
   if (active.value && !penetrationMode.value && !toolbarPanelHovered.value) {
     updateCursorEl(e.clientX, e.clientY)
   }
@@ -362,8 +381,12 @@ watch(
   (isLive) => {
     if (isLive) {
       window.addEventListener('pointermove', onGlobalPointerMove, { passive: true })
+      window.addEventListener('pointerup', onGlobalPointerUp)
+      window.addEventListener('pointercancel', onGlobalPointerUp)
     } else {
       window.removeEventListener('pointermove', onGlobalPointerMove)
+      window.removeEventListener('pointerup', onGlobalPointerUp)
+      window.removeEventListener('pointercancel', onGlobalPointerUp)
     }
   },
   { immediate: true },
@@ -490,7 +513,51 @@ function onDoubleClick(e: MouseEvent) {
   }
 }
 
-function onPointerDown(e: PointerEvent) {
+async function ensureToolbarAboveOverlay() {
+  try {
+    await invoke('raise_toolbar')
+  } catch (error) {
+    console.error('Failed to raise toolbar above overlay:', error)
+  }
+}
+
+function capturePointer(e: PointerEvent) {
+  previewCanvasRef.value?.setPointerCapture(e.pointerId)
+  capturedPointerId = e.pointerId
+}
+
+function releaseCapturedPointer() {
+  if (capturedPointerId === null || !previewCanvasRef.value) return
+  try {
+    previewCanvasRef.value.releasePointerCapture(capturedPointerId)
+  } catch {
+    // pointer already released
+  }
+  capturedPointerId = null
+}
+
+function finishActivePointerInteraction() {
+  if (hoverRafId !== null) {
+    cancelAnimationFrame(hoverRafId)
+    hoverRafId = null
+  }
+  releaseCapturedPointer()
+  if (isDragging) {
+    isDragging = false
+    isMoving.value = false
+    endDrag()
+  } else if (isDrawing.value) {
+    endDraw()
+    if (toolBeforeModifier !== null) {
+      currentTool.value = toolBeforeModifier as Tool
+      toolBeforeModifier = null
+    }
+  }
+  hoveredActionInfo.value = null
+  pointerModDown.value = false
+}
+
+async function onPointerDown(e: PointerEvent) {
   if (e.button !== 0) return
   if (penetrationMode.value || !active.value || showQuickColors.value) return
 
@@ -502,6 +569,14 @@ function onPointerDown(e: PointerEvent) {
     return
   }
 
+  // Capture immediately so move/up events are not lost while awaiting IPC (raise_toolbar).
+  const willInteract = canStartElementDrag(e) || (currentTool.value !== 'text' && !penetrationMode.value)
+  if (willInteract) {
+    capturePointer(e)
+  }
+
+  await ensureToolbarAboveOverlay()
+
   // Drag when over an element; optional: require Ctrl/Command (scheme A — modifier on element wins over rect draw)
   if (canStartElementDrag(e)) {
     isDragging = true
@@ -509,7 +584,6 @@ function onPointerDown(e: PointerEvent) {
     dragStartY = e.clientY
     isMoving.value = true
     beginDrag(hoveredActionInfo.value!.action)
-    previewCanvasRef.value?.setPointerCapture(e.pointerId)
     return
   }
 
@@ -532,7 +606,7 @@ function onPointerDown(e: PointerEvent) {
     currentTool.value = 'line'
   }
 
-  previewCanvasRef.value?.setPointerCapture(e.pointerId)
+  capturePointer(e)
   startDraw({ x: e.clientX, y: e.clientY })
 }
 
@@ -543,7 +617,9 @@ function onPointerMove(e: PointerEvent) {
   lastScreenY = e.screenY
   pointerScreenKnown = true
   pointerModDown.value = modDown(e)
-  updateCursorEl(e.clientX, e.clientY)
+  if (!toolbarPanelHovered.value) {
+    updateCursorEl(e.clientX, e.clientY)
+  }
 
   if (isDragging) {
     updateDragOffset(e.clientX - dragStartX, e.clientY - dragStartY)
@@ -592,7 +668,9 @@ function onPointerMove(e: PointerEvent) {
 }
 
 function onPointerUp(e: PointerEvent) {
-  previewCanvasRef.value?.releasePointerCapture(e.pointerId)
+  if (capturedPointerId !== null && e.pointerId !== capturedPointerId) return
+  if (capturedPointerId === null && !isDrawing.value && !isDragging) return
+  releaseCapturedPointer()
 
   if (isDragging) {
     isDragging = false
@@ -613,12 +691,15 @@ function abortActivePointerInteraction() {
     cancelAnimationFrame(hoverRafId)
     hoverRafId = null
   }
+  releaseCapturedPointer()
   if (isDragging) {
     isDragging = false
     isMoving.value = false
     endDrag()
   }
-  endDraw()
+  if (isDrawing.value) {
+    endDraw()
+  }
   toolBeforeModifier = null
   hoveredActionInfo.value = null
   pointerModDown.value = false
@@ -965,10 +1046,20 @@ onMounted(async () => {
       toolbarPanelHovered.value = event.payload
     }),
   )
+
+  unlisteners.push(
+    await listen(TOOLBAR_POINTER_UP_EVENT, () => {
+      if (isDrawing.value || isDragging || capturedPointerId !== null) {
+        finishActivePointerInteraction()
+      }
+    }),
+  )
 })
 
 onUnmounted(() => {
   window.removeEventListener('pointermove', onGlobalPointerMove)
+  window.removeEventListener('pointerup', onGlobalPointerUp)
+  window.removeEventListener('pointercancel', onGlobalPointerUp)
   window.removeEventListener('resize', debouncedResize)
   if (resizeTimer) {
     clearTimeout(resizeTimer)
@@ -982,6 +1073,10 @@ onUnmounted(() => {
   if (hoverRafId !== null) {
     cancelAnimationFrame(hoverRafId)
     hoverRafId = null
+  }
+  if (pointerScreenRafId !== null) {
+    cancelAnimationFrame(pointerScreenRafId)
+    pointerScreenRafId = null
   }
   unlisteners.forEach((fn) => fn())
   disposeTooltip()

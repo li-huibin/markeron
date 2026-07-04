@@ -22,8 +22,8 @@ use tracing::{info, warn};
 use config::{lock_or_recover, AppConfig, AppState};
 pub use overlay::{
     activate_drawing, clear_drawing, deactivate_drawing, enter_penetration_mode,
-    exit_penetration_mode, set_toolbar_window_visible, setup_overlay_size, toggle_drawing,
-    toggle_penetration_mode,
+    exit_penetration_mode, raise_toolbar_above_overlay, set_toolbar_window_visible,
+    setup_overlay_size, toggle_drawing, toggle_penetration_mode,
 };
 
 pub fn rebuild_tray_menu(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
@@ -126,6 +126,7 @@ pub fn run() {
             commands::set_toolbar_visible,
             commands::set_toolbar_popup,
             commands::suppress_penetration,
+            commands::raise_toolbar,
             commands::set_whiteboard_mode,
             commands::open_url,
             clipboard::copy_screen,

@@ -10,6 +10,7 @@ import { loadToolbarPosition, saveToolbarPosition } from '../utils/toolbarPositi
 import { fitToolbarWindow, measureToolbarPanelHeight } from '../utils/toolbarWindow'
 import { isPointerOverPanelRect } from '../utils/toolbarPanelHover'
 import { LogicalPosition } from '@tauri-apps/api/dpi'
+import { invoke } from '@tauri-apps/api/core'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import type { ToolbarLayout } from '../utils/toolbarSettings'
 
@@ -145,10 +146,6 @@ function syncPanelHover() {
     emit('panelHover', false)
     return
   }
-  // Standalone toolbar lives in its own window: pointerX/Y default to (0,0) until the
-  // pointer moves inside that window, so coordinate checks falsely report hover on init.
-  // Hover is driven by pointerenter/leave on the panel instead.
-  if (props.standaloneWindow) return
   const r = panelRef.value.getBoundingClientRect()
   const inside =
     props.pointerX >= r.left && props.pointerX <= r.right && props.pointerY >= r.top && props.pointerY <= r.bottom
@@ -287,6 +284,7 @@ function stopDrag(e?: PointerEvent) {
       const [pos, scale] = await Promise.all([win.outerPosition(), win.scaleFactor()])
       const logical = pos.toLogical(scale)
       saveToolbarPosition(logical.x, logical.y, true)
+      await invoke('raise_toolbar')
     })()
     syncPanelHover()
     return
@@ -317,6 +315,13 @@ watch(panelW, () => {
     scheduleSyncStandaloneWindowSize()
   }
 })
+
+watch(
+  () => [props.pointerX, props.pointerY] as const,
+  () => {
+    syncPanelHover()
+  },
+)
 
 onMounted(() => {
   initPosition()

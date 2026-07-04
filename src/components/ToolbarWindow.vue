@@ -9,6 +9,7 @@ import {
   OVERLAY_STATE_REQUEST_EVENT,
   TOOLBAR_WINDOW_CLOSED_EVENT,
   TOOLBAR_PANEL_HOVER_EVENT,
+  TOOLBAR_POINTER_UP_EVENT,
   OVERLAY_POINTER_SCREEN_EVENT,
   emitToolbarAction,
   type OverlayStateSync,
@@ -65,6 +66,12 @@ async function onToolbarClose() {
 
 function onToolbarPointerDown() {
   void invoke('suppress_penetration', { durationMs: 1200 })
+}
+
+async function onToolbarPointerUp() {
+  // Only notify overlay when a pointer was likely captured there (drawing/dragging).
+  // Avoids spurious overlay events on ordinary toolbar clicks.
+  await emit(TOOLBAR_POINTER_UP_EVENT)
 }
 
 async function onTogglePenetration() {
@@ -141,7 +148,12 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="fixed inset-0 bg-transparent overflow-hidden" @pointerdown.capture="onToolbarPointerDown">
+  <div
+    class="fixed inset-0 bg-transparent overflow-hidden"
+    @pointerdown.capture="onToolbarPointerDown"
+    @pointerup.capture="onToolbarPointerUp"
+    @pointercancel.capture="onToolbarPointerUp"
+  >
     <ToolToolbar
       ref="toolToolbarRef"
       standalone-window

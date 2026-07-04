@@ -199,6 +199,11 @@ pub fn suppress_penetration(state: tauri::State<'_, AppState>, duration_ms: Opti
     crate::overlay::suppress_penetration_for(&state, duration_ms.unwrap_or(800));
 }
 
+#[tauri::command]
+pub fn raise_toolbar(app: AppHandle) {
+    crate::overlay::raise_toolbar_above_overlay(&app);
+}
+
 const ALLOWED_URL_PREFIXES: &[&str] = &["https://github.com/", "https://apps.microsoft.com/"];
 
 #[tauri::command]
