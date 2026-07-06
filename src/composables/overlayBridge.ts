@@ -6,6 +6,7 @@ export const TOOLBAR_ACTION_EVENT = 'toolbar-action'
 export const OVERLAY_STATE_REQUEST_EVENT = 'overlay-state-request'
 export const TOOLBAR_WINDOW_CLOSED_EVENT = 'toolbar-window-closed'
 export const TOOLBAR_PANEL_HOVER_EVENT = 'toolbar-panel-hover'
+export const TOOLBAR_DRAGGING_EVENT = 'toolbar-dragging'
 /** Screen-space pointer position from overlay — used to probe toolbar hover across windows. */
 export const OVERLAY_POINTER_SCREEN_EVENT = 'overlay-pointer-screen'
 /** Raised when the pointer is released over the toolbar window (overlay may miss pointerup). */

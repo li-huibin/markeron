@@ -9,6 +9,7 @@ import { createDefaultTextOutline, normalizeTextOutline } from '../constants/tex
 import {
   OVERLAY_STATE_EVENT,
   OVERLAY_STATE_REQUEST_EVENT,
+  TOOLBAR_DRAGGING_EVENT,
   TOOLBAR_WINDOW_CLOSED_EVENT,
   TOOLBAR_PANEL_HOVER_EVENT,
   TOOLBAR_POINTER_UP_EVENT,
@@ -64,6 +65,7 @@ function onPointerMove(e: PointerEvent) {
 }
 
 async function onToolbarClose() {
+  await emit(TOOLBAR_DRAGGING_EVENT, false)
   await invoke('set_toolbar_popup', { visible: false, x: null, y: null })
   await emit(TOOLBAR_WINDOW_CLOSED_EVENT)
 }
@@ -73,6 +75,7 @@ function onToolbarPointerDown() {
 }
 
 async function onToolbarPointerUp() {
+  await emit(TOOLBAR_DRAGGING_EVENT, false)
   // Only notify overlay when a pointer was likely captured there (drawing/dragging).
   // Avoids spurious overlay events on ordinary toolbar clicks.
   await emit(TOOLBAR_POINTER_UP_EVENT)
@@ -85,6 +88,13 @@ async function onTogglePenetration() {
 
 async function onPanelHover(hovering: boolean) {
   await emit(TOOLBAR_PANEL_HOVER_EVENT, hovering)
+}
+
+async function onPanelDrag(dragging: boolean) {
+  if (dragging) {
+    void invoke('suppress_penetration', { durationMs: 1600 })
+  }
+  await emit(TOOLBAR_DRAGGING_EVENT, dragging)
 }
 
 onMounted(async () => {
@@ -189,6 +199,7 @@ onUnmounted(() => {
       @exit-drawing="emitToolbarAction({ type: 'exitDrawing' })"
       @close="onToolbarClose"
       @panel-hover="onPanelHover"
+      @panel-drag="onPanelDrag"
     />
   </div>
 </template>

@@ -10,6 +10,7 @@ import {
   OVERLAY_STATE_EVENT,
   TOOLBAR_ACTION_EVENT,
   OVERLAY_STATE_REQUEST_EVENT,
+  TOOLBAR_DRAGGING_EVENT,
   TOOLBAR_PANEL_HOVER_EVENT,
   TOOLBAR_POINTER_UP_EVENT,
   OVERLAY_POINTER_SCREEN_EVENT,
@@ -60,6 +61,7 @@ const toolbarVisibility = ref<ToolbarVisibility>('space')
 const toolbarPinned = computed(() => isToolbarPinned(toolbarVisibility.value))
 const showToolbarPopup = ref(false)
 const toolbarPanelHovered = ref(false)
+const toolbarPanelDragging = ref(false)
 /** Hide overlay chrome during screen capture so panels are not in the clipboard image. */
 const hideUiForCapture = ref(false)
 const sessionActive = computed(() => active.value || penetrationMode.value)
@@ -200,11 +202,13 @@ function applyToolbarFromConfig(general?: AppConfig['general']) {
   toolbarVisibility.value = nextVisibility
   if (isToolbarPinned(nextVisibility)) {
     showToolbarPopup.value = false
+    toolbarPanelDragging.value = false
     if (sessionActive.value) {
       void invoke('set_toolbar_visible', { visible: true })
     }
   } else if (sessionActive.value) {
     showToolbarPopup.value = false
+    toolbarPanelDragging.value = false
     void invoke('set_toolbar_visible', { visible: false })
   }
 }
@@ -229,6 +233,7 @@ async function setToolbarPopupVisible(visible: boolean) {
   showToolbarPopup.value = visible
   if (!visible) {
     toolbarPanelHovered.value = false
+    toolbarPanelDragging.value = false
     await invoke('set_toolbar_popup', { visible: false, x: null, y: null })
     return
   }
@@ -375,7 +380,7 @@ function onGlobalPointerMove(e: PointerEvent) {
   if (sessionActive.value && !penetrationMode.value) {
     scheduleEmitPointerScreenForToolbar()
   }
-  if (active.value && !penetrationMode.value && !toolbarPanelHovered.value) {
+  if (active.value && !penetrationMode.value && !toolbarPanelHovered.value && !toolbarPanelDragging.value) {
     updateCursorEl(e.clientX, e.clientY)
   }
 }
@@ -814,6 +819,7 @@ const wantsCustomCursor = computed(
     !hideUiForCapture.value &&
     !showQuickColors.value &&
     !toolbarPanelHovered.value &&
+    !toolbarPanelDragging.value &&
     !showDragCursor.value &&
     currentTool.value !== 'text',
 )
@@ -1015,12 +1021,14 @@ onMounted(async () => {
         whiteboardMode.value = false
         void syncWhiteboardMode(false)
         toolbarPanelHovered.value = false
+        toolbarPanelDragging.value = false
         showToolbarPopup.value = false
         if (!preserveDrawings.value) {
           hardReset()
         }
       } else if (mode === 'drawing') {
         toolbarPanelHovered.value = false
+        toolbarPanelDragging.value = false
         if (!toolbarPinned.value) {
           showToolbarPopup.value = false
         }
@@ -1061,13 +1069,24 @@ onMounted(async () => {
   unlisteners.push(
     await listen('toolbar-window-closed', () => {
       toolbarPanelHovered.value = false
+      toolbarPanelDragging.value = false
       showToolbarPopup.value = false
     }),
   )
 
   unlisteners.push(
     await listen<boolean>(TOOLBAR_PANEL_HOVER_EVENT, (event) => {
+      if (!event.payload && toolbarPanelDragging.value) return
       toolbarPanelHovered.value = event.payload
+    }),
+  )
+
+  unlisteners.push(
+    await listen<boolean>(TOOLBAR_DRAGGING_EVENT, (event) => {
+      toolbarPanelDragging.value = event.payload
+      if (event.payload) {
+        toolbarPanelHovered.value = true
+      }
     }),
   )
 

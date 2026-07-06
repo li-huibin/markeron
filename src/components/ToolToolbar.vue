@@ -53,6 +53,7 @@ const emit = defineEmits<{
   togglePenetration: []
   exitDrawing: []
   panelHover: [hovering: boolean]
+  panelDrag: [dragging: boolean]
 }>()
 
 const tools = computed(() => TOOL_DEFS.map((d) => ({ ...d, label: t(`tools.${d.id}`) })))
@@ -245,6 +246,8 @@ function onPenetrationModeClick() {
 function startDrag(e: PointerEvent) {
   if (e.button !== 0) return
   isDragging.value = true
+  emit('panelHover', true)
+  emit('panelDrag', true)
   dragPointerId = e.pointerId
   captureTarget = e.currentTarget as HTMLElement
   captureTarget.setPointerCapture(e.pointerId)
@@ -295,6 +298,7 @@ function stopDrag(e?: PointerEvent) {
     dragRafId = null
   }
   releaseDragCapture()
+  emit('panelDrag', false)
   if (props.standaloneWindow) {
     void (async () => {
       const win = getCurrentWindow()
@@ -310,6 +314,11 @@ function stopDrag(e?: PointerEvent) {
     saveToolbarPosition(panelLeft.value, panelTop.value, props.standaloneWindow)
   }
   syncPanelHover()
+}
+
+function onPanelPointerLeave() {
+  if (isDragging.value) return
+  emit('panelHover', false)
 }
 
 function stopDragOnBlur() {
@@ -400,7 +409,7 @@ onUnmounted(() => {
       "
       @mousedown.stop
       @pointerenter="emit('panelHover', true)"
-      @pointerleave="emit('panelHover', false)"
+      @pointerleave="onPanelPointerLeave"
     >
       <div
         class="overlay-panel-surface w-full"
