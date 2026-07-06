@@ -31,7 +31,6 @@ export interface KeyboardActions {
   exitWhiteboardMode: () => void
   copyScreen: () => void
   copyWhiteboard: () => void
-  setToolbarPopupVisible: (visible: boolean) => void
   toggleToolbarPopupVisible: () => void
   commitCurrentTextBox: (cancel?: boolean) => void
 }
@@ -100,7 +99,6 @@ export function createKeyDownHandler(ctx: KeyboardContext, actions: KeyboardActi
     if (e.key === 't' || e.key === 'T') {
       ctx.currentTool.value = 'text'
       actions.showToolTip('text')
-      actions.setToolbarPopupVisible(false)
       return
     }
 
@@ -109,7 +107,6 @@ export function createKeyDownHandler(ctx: KeyboardContext, actions: KeyboardActi
       const tool = TOOL_KEYS[parseInt(e.key) - 1]
       ctx.currentTool.value = tool
       actions.showToolTip(tool)
-      actions.setToolbarPopupVisible(false)
       return
     }
 

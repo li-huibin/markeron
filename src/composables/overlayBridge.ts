@@ -41,6 +41,7 @@ export type ToolbarAction =
   | { type: 'toggleWhiteboard' }
   | { type: 'copy' }
   | { type: 'togglePenetration' }
+  | { type: 'togglePin' }
   | { type: 'exitDrawing' }
 
 export function emitToolbarAction(action: ToolbarAction): void {

@@ -127,6 +127,7 @@ function cycleColor(direction: number) {
 function onContextMenu(e: MouseEvent) {
   e.preventDefault()
   if (!active.value || penetrationMode.value || textBoxPos.value || isDrawing.value) return
+  hideToolbarPopupForCanvasInteraction()
   quickColorsPos.value = { x: e.clientX, y: e.clientY }
   showQuickColors.value = true
 }
@@ -253,6 +254,30 @@ function toggleToolbarPopupVisible() {
   void setToolbarPopupVisible(!showToolbarPopup.value)
 }
 
+function hideToolbarPopupForCanvasInteraction() {
+  if (!toolbarPinned.value && showToolbarPopup.value) {
+    void setToolbarPopupVisible(false)
+  }
+}
+
+async function toggleToolbarPin() {
+  const nextVisibility: ToolbarVisibility = toolbarPinned.value ? 'space' : 'always'
+  try {
+    const cfg = await invoke<AppConfig>('get_config')
+    if (!cfg.general) return
+    cfg.general.toolbarVisibility = nextVisibility
+    await invoke('save_general', { general: cfg.general })
+  } catch (error) {
+    console.error('Failed to toggle toolbar pin:', error)
+  }
+}
+
+async function syncOpenToolbarPopupWindow() {
+  if (toolbarPinned.value || !showToolbarPopup.value) return
+  await invoke('set_toolbar_popup', { visible: true, x: null, y: null })
+  toolbarPanelHovered.value = true
+}
+
 function applyDefaultEntryFromConfig(general?: AppConfig['general']) {
   defaultEntryMode.value = resolveDefaultEntryMode(general)
 }
@@ -294,7 +319,6 @@ async function enterWhiteboardMode(options?: { fromDefaultEntry?: boolean }) {
   whiteboardMode.value = true
   showQuickColors.value = false
   textBoxPos.value = null
-  void setToolbarPopupVisible(false)
   void syncWhiteboardMode(true)
   currentTool.value = 'pen'
   showTip(t('overlay.whiteboardReady'))
@@ -499,6 +523,7 @@ function onDoubleClick(e: MouseEvent) {
   const clickedActionInfo = findActionAt(pos)
 
   if (clickedActionInfo && clickedActionInfo.action.tool === 'text') {
+    hideToolbarPopupForCanvasInteraction()
     if (textBoxPos.value) {
       commitCurrentTextBox()
     }
@@ -520,6 +545,7 @@ function onDoubleClick(e: MouseEvent) {
     })
   } else if (currentTool.value === 'text') {
     // In text mode, double-click on empty area to create new text
+    hideToolbarPopupForCanvasInteraction()
     if (textBoxPos.value) {
       commitCurrentTextBox()
     }
@@ -585,6 +611,7 @@ async function onPointerDown(e: PointerEvent) {
   lastPointerY = e.clientY
 
   if (textBoxPos.value) {
+    hideToolbarPopupForCanvasInteraction()
     commitCurrentTextBox()
     return
   }
@@ -599,6 +626,7 @@ async function onPointerDown(e: PointerEvent) {
 
   // Drag when over an element; optional: require Ctrl/Command (scheme A — modifier on element wins over rect draw)
   if (canStartElementDrag(e)) {
+    hideToolbarPopupForCanvasInteraction()
     isDragging = true
     dragStartX = e.clientX
     dragStartY = e.clientY
@@ -611,6 +639,8 @@ async function onPointerDown(e: PointerEvent) {
   if (currentTool.value === 'text') {
     return
   }
+
+  hideToolbarPopupForCanvasInteraction()
 
   if (modDown(e) && e.shiftKey) {
     toolBeforeModifier = currentTool.value
@@ -760,7 +790,6 @@ const onKeyDown = createKeyDownHandler(
     exitWhiteboardMode,
     copyScreen,
     copyWhiteboard,
-    setToolbarPopupVisible,
     toggleToolbarPopupVisible,
     commitCurrentTextBox,
   },
@@ -921,6 +950,9 @@ async function handleToolbarAction(action: ToolbarAction) {
     case 'togglePenetration':
       await togglePenetrationMode()
       break
+    case 'togglePin':
+      await toggleToolbarPin()
+      break
     case 'exitDrawing':
       exitDrawing()
       break
@@ -1029,7 +1061,7 @@ onMounted(async () => {
       } else if (mode === 'drawing') {
         toolbarPanelHovered.value = false
         toolbarPanelDragging.value = false
-        if (!toolbarPinned.value) {
+        if (!toolbarPinned.value && previousMode === 'hidden') {
           showToolbarPopup.value = false
         }
         if (previousMode === 'hidden') {
@@ -1042,12 +1074,11 @@ onMounted(async () => {
           customCursorPositionReady.value = true
           await refreshCustomCursorPosition()
           emitPointerScreenForToolbar()
+          await syncOpenToolbarPopupWindow()
         })()
       } else if (mode === 'penetration') {
         abortActivePointerInteraction()
-        if (!toolbarPinned.value) {
-          void setToolbarPopupVisible(false)
-        }
+        void syncOpenToolbarPopupWindow()
       }
       syncOverlayStateToToolbar()
     }),

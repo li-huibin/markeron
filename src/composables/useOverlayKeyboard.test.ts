@@ -43,7 +43,6 @@ function createActions(): KeyboardActions & { calls: Record<string, unknown[][]>
     exitWhiteboardMode: make('exitWhiteboardMode') as KeyboardActions['exitWhiteboardMode'],
     copyScreen: make('copyScreen') as KeyboardActions['copyScreen'],
     copyWhiteboard: make('copyWhiteboard') as KeyboardActions['copyWhiteboard'],
-    setToolbarPopupVisible: make('setToolbarPopupVisible') as KeyboardActions['setToolbarPopupVisible'],
     toggleToolbarPopupVisible: make('toggleToolbarPopupVisible') as KeyboardActions['toggleToolbarPopupVisible'],
     commitCurrentTextBox: make('commitCurrentTextBox') as KeyboardActions['commitCurrentTextBox'],
   }
@@ -121,9 +120,10 @@ describe('useOverlayKeyboard', () => {
       expect(actions.calls.showToolTip[0]).toEqual(['text'])
     })
 
-    it('tool switch hides toolbar popup', () => {
+    it('tool switch keeps toolbar popup open', () => {
+      ctx.showToolbarPopup.value = true
       handler(key('3'))
-      expect(actions.calls.setToolbarPopupVisible[0]).toEqual([false])
+      expect(ctx.showToolbarPopup.value).toBe(true)
     })
   })
 

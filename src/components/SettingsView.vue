@@ -5,12 +5,7 @@ import { listen } from '@tauri-apps/api/event'
 import { isEnabled } from '@tauri-apps/plugin-autostart'
 import type { AppConfig, SaveResult } from '../types/app'
 import { resolveDragMode, type DragMode } from '../utils/dragMode'
-import {
-  resolveToolbarLayout,
-  resolveToolbarVisibility,
-  type ToolbarLayout,
-  type ToolbarVisibility,
-} from '../utils/toolbarSettings'
+import { resolveToolbarLayout, type ToolbarLayout } from '../utils/toolbarSettings'
 import { resolveDefaultEntryMode, type DefaultEntryMode } from '../utils/entryMode'
 import { resolveEraserMode, type EraserMode } from '../utils/eraserMode'
 import { isMacOS } from '../utils/platform'
@@ -167,7 +162,6 @@ async function resetDefaults() {
 
 const autoStartEnabled = ref(false)
 const dragMode = ref<DragMode>('off')
-const toolbarVisibility = ref<ToolbarVisibility>('space')
 const toolbarLayout = ref<ToolbarLayout>('detailed')
 const defaultEntryMode = ref<DefaultEntryMode>('screen')
 const eraserMode = ref<EraserMode>('stroke')
@@ -181,7 +175,6 @@ onMounted(async () => {
   const cfg = await invoke<AppConfig>('get_config')
   Object.assign(shortcuts, cfg.shortcuts)
   dragMode.value = resolveDragMode(cfg.general)
-  toolbarVisibility.value = resolveToolbarVisibility(cfg.general)
   toolbarLayout.value = resolveToolbarLayout(cfg.general)
   defaultEntryMode.value = resolveDefaultEntryMode(cfg.general)
   eraserMode.value = resolveEraserMode(cfg.general)
@@ -392,7 +385,6 @@ onUnmounted(() => {
       <GeneralTab
         v-else-if="activeTab === 'general'"
         :drag-mode="dragMode"
-        :toolbar-visibility="toolbarVisibility"
         :toolbar-layout="toolbarLayout"
         :default-entry-mode="defaultEntryMode"
         :eraser-mode="eraserMode"
@@ -401,7 +393,6 @@ onUnmounted(() => {
         :auto-start-enabled="autoStartEnabled"
         :angle-snap-step="angleSnapStep"
         @update:drag-mode="dragMode = $event"
-        @update:toolbar-visibility="toolbarVisibility = $event"
         @update:toolbar-layout="toolbarLayout = $event"
         @update:default-entry-mode="defaultEntryMode = $event"
         @update:eraser-mode="eraserMode = $event"

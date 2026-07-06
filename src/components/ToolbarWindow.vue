@@ -97,8 +97,22 @@ async function onPanelDrag(dragging: boolean) {
   await emit(TOOLBAR_DRAGGING_EVENT, dragging)
 }
 
+function onToolbarKeyDown(e: KeyboardEvent) {
+  if (e.key !== ' ' || toolbarPinned.value) return
+  if (
+    e.target instanceof HTMLInputElement ||
+    e.target instanceof HTMLTextAreaElement ||
+    e.target instanceof HTMLSelectElement
+  ) {
+    return
+  }
+  e.preventDefault()
+  void onToolbarClose()
+}
+
 onMounted(async () => {
   window.addEventListener('pointermove', onPointerMove, { passive: true })
+  window.addEventListener('keydown', onToolbarKeyDown)
 
   try {
     await restoreToolbarWindowPosition()
@@ -157,6 +171,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('pointermove', onPointerMove)
+  window.removeEventListener('keydown', onToolbarKeyDown)
   unlisteners.forEach((fn) => fn())
 })
 </script>
@@ -196,6 +211,7 @@ onUnmounted(() => {
       @toggle-whiteboard="emitToolbarAction({ type: 'toggleWhiteboard' })"
       @copy="emitToolbarAction({ type: 'copy' })"
       @toggle-penetration="onTogglePenetration"
+      @toggle-pin="emitToolbarAction({ type: 'togglePin' })"
       @exit-drawing="emitToolbarAction({ type: 'exitDrawing' })"
       @close="onToolbarClose"
       @panel-hover="onPanelHover"

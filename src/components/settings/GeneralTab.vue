@@ -5,8 +5,8 @@ import { enable, isEnabled, disable } from '@tauri-apps/plugin-autostart'
 import type { AppConfig } from '../../types/app'
 import type { DragMode } from '../../utils/dragMode'
 import { DRAG_MODE_OPTIONS } from '../../utils/dragMode'
-import type { ToolbarLayout, ToolbarVisibility } from '../../utils/toolbarSettings'
-import { TOOLBAR_LAYOUT_OPTIONS, TOOLBAR_VISIBILITY_OPTIONS } from '../../utils/toolbarSettings'
+import type { ToolbarLayout } from '../../utils/toolbarSettings'
+import { TOOLBAR_LAYOUT_OPTIONS } from '../../utils/toolbarSettings'
 import type { DefaultEntryMode } from '../../utils/entryMode'
 import { DEFAULT_ENTRY_MODE_OPTIONS } from '../../utils/entryMode'
 import type { EraserMode } from '../../utils/eraserMode'
@@ -26,7 +26,6 @@ const localeDropdownRef = ref<HTMLElement | null>(null)
 
 const snapStepOptions = [15, 30, 45] as const
 const dragModeOptions = DRAG_MODE_OPTIONS
-const toolbarVisibilityOptions = TOOLBAR_VISIBILITY_OPTIONS
 const toolbarLayoutOptions = TOOLBAR_LAYOUT_OPTIONS
 const defaultEntryModeOptions = DEFAULT_ENTRY_MODE_OPTIONS
 const eraserModeOptions = ERASER_MODE_OPTIONS
@@ -45,7 +44,6 @@ const dragModeDescKey = computed(() => {
 
 const props = defineProps<{
   dragMode: DragMode
-  toolbarVisibility: ToolbarVisibility
   toolbarLayout: ToolbarLayout
   defaultEntryMode: DefaultEntryMode
   eraserMode: EraserMode
@@ -57,7 +55,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:dragMode': [value: DragMode]
-  'update:toolbarVisibility': [value: ToolbarVisibility]
   'update:toolbarLayout': [value: ToolbarLayout]
   'update:defaultEntryMode': [value: DefaultEntryMode]
   'update:eraserMode': [value: EraserMode]
@@ -123,7 +120,6 @@ async function setDragMode(mode: DragMode) {
     if (!cfg.general)
       cfg.general = {
         dragMode: mode,
-        toolbarVisibility: props.toolbarVisibility,
         toolbarLayout: props.toolbarLayout,
         preserveDrawings: false,
         whiteboardPreserveDrawings: true,
@@ -136,27 +132,6 @@ async function setDragMode(mode: DragMode) {
   }
 }
 
-async function setToolbarVisibility(visibility: ToolbarVisibility) {
-  if (visibility === props.toolbarVisibility) return
-  emit('update:toolbarVisibility', visibility)
-  try {
-    const cfg = await invoke<AppConfig>('get_config')
-    if (!cfg.general)
-      cfg.general = {
-        dragMode: props.dragMode,
-        toolbarVisibility: visibility,
-        toolbarLayout: props.toolbarLayout,
-        preserveDrawings: false,
-        whiteboardPreserveDrawings: true,
-        angleSnapStep: props.angleSnapStep,
-      }
-    cfg.general.toolbarVisibility = visibility
-    await invoke('save_general', { general: cfg.general })
-  } catch (error) {
-    console.error('Failed to save toolbar visibility:', error)
-  }
-}
-
 async function setToolbarLayout(layout: ToolbarLayout) {
   if (layout === props.toolbarLayout) return
   emit('update:toolbarLayout', layout)
@@ -165,7 +140,6 @@ async function setToolbarLayout(layout: ToolbarLayout) {
     if (!cfg.general)
       cfg.general = {
         dragMode: props.dragMode,
-        toolbarVisibility: props.toolbarVisibility,
         toolbarLayout: layout,
         preserveDrawings: false,
         whiteboardPreserveDrawings: true,
@@ -186,7 +160,6 @@ async function setEraserMode(mode: EraserMode) {
     if (!cfg.general)
       cfg.general = {
         dragMode: props.dragMode,
-        toolbarVisibility: props.toolbarVisibility,
         toolbarLayout: props.toolbarLayout,
         defaultEntryMode: props.defaultEntryMode,
         eraserMode: mode,
@@ -209,7 +182,6 @@ async function setDefaultEntryMode(mode: DefaultEntryMode) {
     if (!cfg.general)
       cfg.general = {
         dragMode: props.dragMode,
-        toolbarVisibility: props.toolbarVisibility,
         toolbarLayout: props.toolbarLayout,
         defaultEntryMode: mode,
         preserveDrawings: false,
@@ -360,25 +332,6 @@ async function toggleAngleSnapStep(step: (typeof snapStepOptions)[number]) {
             />
           </button>
         </div>
-      </div>
-
-      <div class="settings-card">
-        <div class="settings-card-row">
-          <span class="text-[12.5px] settings-text-label">{{ t('settings.toolbarVisibility') }}</span>
-          <div class="flex items-center gap-1 shrink-0 flex-wrap justify-end max-w-[62%]">
-            <button
-              v-for="mode in toolbarVisibilityOptions"
-              :key="mode"
-              class="px-2 py-[4px] rounded-md ui-segment text-[10.5px] leading-none transition-colors duration-120 whitespace-nowrap"
-              :class="{ 'ui-segment--active': toolbarVisibility === mode }"
-              :aria-pressed="toolbarVisibility === mode"
-              @click="setToolbarVisibility(mode)"
-            >
-              {{ t(`settings.toolbarVisibility${mode === 'space' ? 'Space' : 'Always'}`) }}
-            </button>
-          </div>
-        </div>
-        <p class="settings-card-desc">{{ t('settings.toolbarVisibilityDesc') }}</p>
       </div>
 
       <div class="settings-card">

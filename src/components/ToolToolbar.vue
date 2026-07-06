@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, nextTick, onMounted, onUnmounted, computed, watch } from 'vue'
-import { Undo2, Redo2, Trash2, Layout, Copy, MoreHorizontal, ChevronUp, MousePointer2, X } from '@lucide/vue'
+import { Undo2, Redo2, Trash2, Layout, Copy, MoreHorizontal, ChevronUp, MousePointer2, Pin, X } from '@lucide/vue'
 import type { Tool } from '../composables/useDrawing'
 import { isMacOS } from '../utils/platform'
 import { useI18n } from '../i18n'
@@ -51,6 +51,7 @@ const emit = defineEmits<{
   toggleWhiteboard: []
   copy: []
   togglePenetration: []
+  togglePin: []
   exitDrawing: []
   panelHover: [hovering: boolean]
   panelDrag: [dragging: boolean]
@@ -70,29 +71,20 @@ const showFullPanel = computed(() => props.layout === 'detailed' || expanded.val
 // Keep compact and expanded states the same width so the standalone toolbar never jumps sideways.
 const PANEL_WIDTH = 272
 const panelW = computed(() => PANEL_WIDTH)
-const closeOnSelect = computed(() => !props.pinned)
-
 function needsWhiteCheck(ri: number, ci: number): boolean {
   return ci >= 5 || (ri === colors.length - 1 && ci >= 3)
 }
 
-function maybeClose() {
-  if (closeOnSelect.value) emit('close')
-}
-
 function selectTool(tool: Tool) {
   emit('selectTool', tool)
-  maybeClose()
 }
 
 function selectColor(color: string) {
   emit('selectColor', color)
-  maybeClose()
 }
 
 function updateWidth(width: number) {
   emit('updateLineWidth', width)
-  maybeClose()
 }
 
 function updateTextOutline(patch: Partial<TextOutlineStyle>) {
@@ -502,6 +494,18 @@ onUnmounted(() => {
             @click="emit('copy')"
           >
             <Copy :size="15" />
+          </button>
+          <button
+            v-if="standaloneWindow"
+            type="button"
+            class="overlay-toolbar-action"
+            :class="pinned ? 'overlay-toolbar-action--active' : ''"
+            :title="pinned ? t('toolbar.unpin') : t('toolbar.pin')"
+            :aria-label="pinned ? t('toolbar.unpin') : t('toolbar.pin')"
+            :aria-pressed="pinned"
+            @click="emit('togglePin')"
+          >
+            <Pin :size="15" />
           </button>
           <button
             v-if="standaloneWindow"
