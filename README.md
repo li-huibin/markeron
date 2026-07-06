@@ -44,7 +44,7 @@ winget install --id 9N6623X973JV --source msstore
 
 - **Annotate anywhere** — draw over any app, including the taskbar
 - **8 tools** — pen, highlighter, arrow, rectangle, ellipse, line, eraser, text
-- **Flexible toolbar** — press <kbd>Space</kbd> to toggle, or enable **always-on** in Settings; simple or detailed layout with undo, copy, and whiteboard actions in-panel; **independent floating window** with drawing / click-through toggles
+- **Flexible toolbar** — press <kbd>Space</kbd> to toggle, or enable **always-on** in Settings; compact panel with **More** to expand, undo, copy, and whiteboard actions in-panel; **independent floating window** with drawing / click-through toggles
 - **Click-through mode** — interact with apps below while staying in the session; toggle via toolbar buttons, <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd> (global), or <kbd>X</kbd> while drawing; disabled in whiteboard mode
 - **Full keyboard control** — every action has a shortcut, no menus needed
 - **Preserve drawings** — enable **Keep after exit** under Whiteboard & content to resume on re-enter
@@ -151,9 +151,8 @@ On **macOS**, use <kbd>Command</kbd> (⌘) in place of <kbd>Ctrl</kbd>, and <kbd
 
 ## Settings
 
-- **Toolbar display** — press <kbd>Space</kbd> to toggle, or always-on (Space does nothing when pinned); floating toolbar window with drawing / click-through buttons
+- **Toolbar display** — press <kbd>Space</kbd> to toggle, or always-on (Space does nothing when pinned); floating toolbar window with drawing / click-through buttons; use **More** to expand full options
 - **Click-through** — pass mouse events to apps below; toggle in toolbar, with <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd> or <kbd>X</kbd> (not in whiteboard mode)
-- **Toolbar layout** — simple (expand with **More**) or detailed
 - **Whiteboard & content** — default entry (screen / whiteboard), keep after exit, keep on <kbd>W</kbd> toggle
 - **Element dragging** — off, hover to drag, or hold <kbd>Ctrl</kbd>/<kbd>Command</kbd> to drag (disabled while eraser is selected)
 - **Eraser mode** — stroke (local erase) or object (delete whole elements when passing over); eraser tool disables element dragging

@@ -13,7 +13,6 @@ import { isPointerOverPanelRect } from '../utils/toolbarPanelHover'
 import { LogicalPosition } from '@tauri-apps/api/dpi'
 import { invoke } from '@tauri-apps/api/core'
 import { getCurrentWindow } from '@tauri-apps/api/window'
-import type { ToolbarLayout } from '../utils/toolbarSettings'
 import type { TextOutlineStyle } from '../composables/drawingTypes'
 
 const { t } = useI18n()
@@ -21,7 +20,6 @@ const { t } = useI18n()
 const modKeyLabel = computed(() => (isMacOS() ? 'Command' : 'Ctrl'))
 
 const props = defineProps<{
-  layout: ToolbarLayout
   pinned: boolean
   standaloneWindow?: boolean
   currentTool: Tool
@@ -66,7 +64,7 @@ const outlinePreviewColor = computed(() => resolveTextOutlineColor(props.textOut
 const customOutlineColor = computed(() => normalizeTextOutline(props.textOutline).color)
 
 const expanded = ref(false)
-const showFullPanel = computed(() => props.layout === 'detailed' || expanded.value)
+const showFullPanel = computed(() => expanded.value)
 
 // Keep compact and expanded states the same width so the standalone toolbar never jumps sideways.
 const PANEL_WIDTH = 272
@@ -319,7 +317,7 @@ function stopDragOnBlur() {
 defineExpose({ syncPanelHover, syncStandaloneWindowSize, probePanelHoverAtScreen })
 
 watch(
-  () => [props.layout, props.pinned, props.standaloneWindow] as const,
+  () => [props.pinned, props.standaloneWindow] as const,
   () => {
     expanded.value = false
     positioned.value = false
@@ -766,8 +764,8 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <!-- More / collapse (simple layout only) -->
-        <div v-if="layout === 'simple'" class="px-3.5 pb-3">
+        <!-- More / collapse -->
+        <div class="px-3.5 pb-3">
           <button
             type="button"
             class="w-full flex items-center justify-center gap-1.5 h-8 border-none rounded-lg cursor-pointer overlay-tool-btn text-[11px] font-sans"
@@ -778,7 +776,7 @@ onUnmounted(() => {
           </button>
         </div>
 
-        <!-- Shortcut hints (detailed only) -->
+        <!-- Shortcut hints (expanded panel) -->
         <div v-if="showFullPanel" class="flex flex-col gap-1.5 pt-1 px-3.5 pb-3 ui-divider-h">
           <div class="flex items-center justify-between text-[10.5px] font-sans">
             <span class="flex items-center gap-1.5 overlay-text-body">

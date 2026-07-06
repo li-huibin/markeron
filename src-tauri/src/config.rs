@@ -29,6 +29,10 @@ fn default_angle_snap_step() -> u16 {
     15
 }
 
+fn default_auto_start() -> bool {
+    true
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum DragMode {
     #[serde(rename = "off")]
@@ -47,15 +51,6 @@ pub enum ToolbarVisibility {
     Space,
     #[serde(rename = "always")]
     Always,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
-pub enum ToolbarLayout {
-    #[serde(rename = "simple")]
-    Simple,
-    #[serde(rename = "detailed")]
-    #[default]
-    Detailed,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -94,12 +89,12 @@ pub struct GeneralConfig {
     pub angle_snap_step: u16,
     #[serde(default, rename = "toolbarVisibility")]
     pub toolbar_visibility: ToolbarVisibility,
-    #[serde(default, rename = "toolbarLayout")]
-    pub toolbar_layout: ToolbarLayout,
     #[serde(default, rename = "defaultEntryMode")]
     pub default_entry_mode: DefaultEntryMode,
     #[serde(default, rename = "eraserMode")]
     pub eraser_mode: EraserMode,
+    #[serde(default = "default_auto_start", rename = "autoStart")]
+    pub auto_start: bool,
 }
 
 impl Default for GeneralConfig {
@@ -113,9 +108,9 @@ impl Default for GeneralConfig {
             whiteboard_preserve_drawings: true,
             angle_snap_step: default_angle_snap_step(),
             toolbar_visibility: ToolbarVisibility::Space,
-            toolbar_layout: ToolbarLayout::Detailed,
             default_entry_mode: DefaultEntryMode::Screen,
             eraser_mode: EraserMode::Stroke,
+            auto_start: default_auto_start(),
         }
     }
 }
@@ -149,12 +144,6 @@ impl GeneralConfig {
             ToolbarVisibility::Space | ToolbarVisibility::Always
         ) {
             self.toolbar_visibility = ToolbarVisibility::Space;
-        }
-        if !matches!(
-            self.toolbar_layout,
-            ToolbarLayout::Simple | ToolbarLayout::Detailed
-        ) {
-            self.toolbar_layout = ToolbarLayout::Detailed;
         }
         if !matches!(
             self.default_entry_mode,
@@ -280,6 +269,23 @@ pub fn load_config(app: &AppHandle) -> AppConfig {
             info!("No config file found, using defaults");
             AppConfig::default()
         }
+    }
+}
+
+pub fn sync_autostart(app: &AppHandle, enabled: bool) {
+    use tauri_plugin_autostart::ManagerExt;
+
+    let manager = app.autolaunch();
+    let current = manager.is_enabled().unwrap_or(false);
+    if current == enabled {
+        return;
+    }
+    if enabled {
+        if let Err(e) = manager.enable() {
+            warn!("Failed to enable autostart: {}", e);
+        }
+    } else if let Err(e) = manager.disable() {
+        warn!("Failed to disable autostart: {}", e);
     }
 }
 
@@ -492,20 +498,23 @@ mod tests {
                 "clearDrawing": "Ctrl+Shift+C"
             },
             "general": {
-                "toolbarVisibility": "always",
-                "toolbarLayout": "simple"
+                "toolbarVisibility": "always"
             }
         }"#;
         let config: AppConfig = serde_json::from_str(json).unwrap();
         assert_eq!(config.general.toolbar_visibility, ToolbarVisibility::Always);
-        assert_eq!(config.general.toolbar_layout, ToolbarLayout::Simple);
     }
 
     #[test]
-    fn general_config_defaults_toolbar_settings() {
+    fn general_config_defaults_toolbar_visibility() {
         let general = GeneralConfig::default();
         assert_eq!(general.toolbar_visibility, ToolbarVisibility::Space);
-        assert_eq!(general.toolbar_layout, ToolbarLayout::Detailed);
+    }
+
+    #[test]
+    fn general_config_defaults_auto_start() {
+        let general = GeneralConfig::default();
+        assert!(general.auto_start);
     }
 
     #[test]

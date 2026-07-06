@@ -1,5 +1,4 @@
 import type { TextOutlineStyle, Tool } from './drawingTypes'
-import type { ToolbarLayout } from '../utils/toolbarSettings'
 
 export const OVERLAY_STATE_EVENT = 'overlay-state-sync'
 export const TOOLBAR_ACTION_EVENT = 'toolbar-action'
@@ -27,7 +26,6 @@ export interface OverlayStateSync {
   canUndo: boolean
   canRedo: boolean
   canClear: boolean
-  toolbarLayout: ToolbarLayout
 }
 
 export type ToolbarAction =

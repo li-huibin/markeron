@@ -1,15 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { isToolbarPinned, resolveToolbarLayout, resolveToolbarVisibility } from './toolbarSettings'
+import { isToolbarPinned, resolveToolbarVisibility } from './toolbarSettings'
 
 describe('toolbarSettings', () => {
-  it('defaults to space visibility and detailed layout', () => {
+  it('defaults to space visibility', () => {
     expect(resolveToolbarVisibility()).toBe('space')
-    expect(resolveToolbarLayout()).toBe('detailed')
   })
 
-  it('reads explicit toolbar settings', () => {
+  it('reads explicit toolbar visibility', () => {
     expect(resolveToolbarVisibility({ toolbarVisibility: 'always' })).toBe('always')
-    expect(resolveToolbarLayout({ toolbarLayout: 'simple' })).toBe('simple')
   })
 
   it('detects pinned toolbar', () => {

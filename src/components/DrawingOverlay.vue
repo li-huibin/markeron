@@ -25,13 +25,7 @@ import { COLOR_PALETTE } from '../constants/colors'
 import { isMacOS } from '../utils/platform'
 import { canStartElementDrag as canStartElementDragGate } from '../utils/dragInteraction'
 import { isDragEnabled, resolveDragMode, type DragMode } from '../utils/dragMode'
-import {
-  isToolbarPinned,
-  resolveToolbarLayout,
-  resolveToolbarVisibility,
-  type ToolbarLayout,
-  type ToolbarVisibility,
-} from '../utils/toolbarSettings'
+import { isToolbarPinned, resolveToolbarVisibility, type ToolbarVisibility } from '../utils/toolbarSettings'
 import { resolveDefaultEntryMode, shouldClearWhiteboardOnEntry, type DefaultEntryMode } from '../utils/entryMode'
 import { resolveEraserMode, type EraserMode } from '../utils/eraserMode'
 import { useI18n } from '../i18n'
@@ -56,7 +50,6 @@ const active = ref(false)
 const penetrationMode = ref(false)
 type OverlaySessionMode = 'hidden' | 'drawing' | 'penetration'
 let lastOverlayMode: OverlaySessionMode = 'hidden'
-const toolbarLayout = ref<ToolbarLayout>('detailed')
 const toolbarVisibility = ref<ToolbarVisibility>('space')
 const toolbarPinned = computed(() => isToolbarPinned(toolbarVisibility.value))
 const showToolbarPopup = ref(false)
@@ -198,7 +191,6 @@ const activeTextBoxOutline = ref<TextOutlineStyle>(createDefaultTextOutline())
 const editingOriginalAction = shallowRef<DrawAction | null>(null)
 
 function applyToolbarFromConfig(general?: AppConfig['general']) {
-  toolbarLayout.value = resolveToolbarLayout(general)
   const nextVisibility = resolveToolbarVisibility(general)
   toolbarVisibility.value = nextVisibility
   if (isToolbarPinned(nextVisibility)) {
@@ -215,10 +207,7 @@ function applyToolbarFromConfig(general?: AppConfig['general']) {
 }
 
 const TOOLBAR_PANEL_HEIGHT = 500
-
-function toolbarPanelWidth(layout: ToolbarLayout): number {
-  return layout === 'detailed' ? 272 : 304
-}
+const TOOLBAR_PANEL_WIDTH = 272
 
 function clampToolbarPosition(left: number, top: number, panelW: number, panelH: number) {
   const margin = 12
@@ -238,7 +227,7 @@ async function setToolbarPopupVisible(visible: boolean) {
     await invoke('set_toolbar_popup', { visible: false, x: null, y: null })
     return
   }
-  const panelW = toolbarPanelWidth(toolbarLayout.value)
+  const panelW = TOOLBAR_PANEL_WIDTH
   const { left, top } = clampToolbarPosition(
     lastPointerX - panelW / 2,
     lastPointerY - TOOLBAR_PANEL_HEIGHT / 2,
@@ -899,7 +888,6 @@ function syncOverlayStateToToolbar() {
     canUndo: canUndo.value,
     canRedo: canRedo.value,
     canClear: canClear.value,
-    toolbarLayout: toolbarLayout.value,
   })
 }
 
@@ -971,7 +959,6 @@ watch(
     canUndo,
     canRedo,
     canClear,
-    toolbarLayout,
     sessionActive,
   ],
   () => syncOverlayStateToToolbar(),

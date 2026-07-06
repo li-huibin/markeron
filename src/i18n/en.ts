@@ -113,11 +113,6 @@ export default {
       'Default entry chooses screen overlay or whiteboard. Keep after exit restores your last session when you re-enter. Keep on W toggle preserves drawings when switching modes without exiting; turn off to start with a blank whiteboard each time you press W.',
     angleSnapStep: 'Angle snap step',
     angleSnapStepDesc: 'Choose how far straight lines snap while holding Alt.',
-    toolbarLayout: 'Toolbar layout',
-    toolbarLayoutSimple: 'Simple',
-    toolbarLayoutDetailed: 'Detailed',
-    toolbarLayoutDesc:
-      'Simple shows compact tools and colors with a More button for full options. Detailed shows the full tool panel.',
     defaultEntryMode: 'Default entry',
     defaultEntryModeScreen: 'Screen',
     defaultEntryModeWhiteboard: 'Whiteboard',
@@ -189,7 +184,7 @@ export default {
     editAndOther: 'Edit & Other',
     settingsPanel: 'Toolbar (Space to toggle)',
     toolbarOptionsHint:
-      'Press Space in annotation mode to open the toolbar. Panel actions keep it open; canvas actions auto-collapse it. Use the pin button at the top of the toolbar to keep it always visible. In General settings, choose simple or detailed layout; in simple mode, use More for the full panel. The toolbar is a separate floating window — use the pen / pointer buttons at the top to switch drawing and click-through mode.',
+      'Press Space in annotation mode to open the toolbar. Panel actions keep it open; canvas actions auto-collapse it. Use the pin button at the top of the toolbar to keep it always visible. Use More at the bottom of the panel to expand full options. The toolbar is a separate floating window — use the pen / pointer buttons at the top to switch drawing and click-through mode.',
     copyScreen: 'Copy screen to clipboard',
     undo: 'Undo',
     redo: 'Redo',

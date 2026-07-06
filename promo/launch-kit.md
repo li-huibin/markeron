@@ -23,7 +23,7 @@ MarkerOn is a lightweight screen annotation tool built with Tauri v2, Rust, Vue,
 
 The app runs silently in the system tray. Press Ctrl+Shift+D to enter annotation mode, draw over any desktop app, use number keys to switch tools, and press X or Ctrl+Shift+X to switch between drawing and click-through mode. In click-through mode, annotations remain visible, but your mouse clicks, scrolling, and typing go to the apps underneath.
 
-MarkerOn also includes a whiteboard mode, undo/redo, text, arrows, shapes, eraser modes, angle snapping, copy-to-clipboard, configurable toolbar layout, and content preservation between sessions.
+MarkerOn also includes a whiteboard mode, undo/redo, text, arrows, shapes, eraser modes, angle snapping, copy-to-clipboard, expandable toolbar panel, and content preservation between sessions.
 
 Official downloads:
 

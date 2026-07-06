@@ -142,8 +142,9 @@ pub fn run() {
             i18n::init(loaded.general.locale.as_deref());
             {
                 let state = handle.state::<AppState>();
-                *lock_or_recover(&state.config) = loaded;
+                *lock_or_recover(&state.config) = loaded.clone();
             }
+            config::sync_autostart(&handle, loaded.general.auto_start);
 
             setup_overlay_size(&handle);
 

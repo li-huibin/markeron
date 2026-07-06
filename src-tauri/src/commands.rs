@@ -118,9 +118,11 @@ pub fn save_general(
         crate::config::save_config(&app, &cfg);
         cfg.clone()
     };
+    let auto_start = snapshot.general.auto_start;
     if let Err(e) = app.emit("config-changed", snapshot) {
         warn!("Failed to emit config-changed: {}", e);
     }
+    crate::config::sync_autostart(&app, auto_start);
     if crate::overlay::current_mode(&state) != crate::overlay::OverlayMode::Hidden {
         crate::overlay::ensure_toolbar_window(&app, &state);
     }

@@ -2,12 +2,11 @@
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
-import { isEnabled } from '@tauri-apps/plugin-autostart'
 import type { AppConfig, SaveResult } from '../types/app'
 import { resolveDragMode, type DragMode } from '../utils/dragMode'
-import { resolveToolbarLayout, type ToolbarLayout } from '../utils/toolbarSettings'
 import { resolveDefaultEntryMode, type DefaultEntryMode } from '../utils/entryMode'
 import { resolveEraserMode, type EraserMode } from '../utils/eraserMode'
+import { resolveAutoStart } from '../utils/autoStart'
 import { isMacOS } from '../utils/platform'
 import { useI18n, syncLocaleFromConfig } from '../i18n'
 import GeneralTab from './settings/GeneralTab.vue'
@@ -160,9 +159,8 @@ async function resetDefaults() {
   }
 }
 
-const autoStartEnabled = ref(false)
+const autoStartEnabled = ref(true)
 const dragMode = ref<DragMode>('off')
-const toolbarLayout = ref<ToolbarLayout>('detailed')
 const defaultEntryMode = ref<DefaultEntryMode>('screen')
 const eraserMode = ref<EraserMode>('stroke')
 const preserveDrawings = ref(false)
@@ -170,17 +168,18 @@ const whiteboardPreserveDrawings = ref(true)
 const angleSnapStep = ref<15 | 30 | 45>(15)
 
 let unlistenSwitchTab: (() => void) | null = null
+let unlistenConfigChanged: (() => void) | null = null
 
 onMounted(async () => {
   const cfg = await invoke<AppConfig>('get_config')
   Object.assign(shortcuts, cfg.shortcuts)
   dragMode.value = resolveDragMode(cfg.general)
-  toolbarLayout.value = resolveToolbarLayout(cfg.general)
   defaultEntryMode.value = resolveDefaultEntryMode(cfg.general)
   eraserMode.value = resolveEraserMode(cfg.general)
   preserveDrawings.value = cfg.general?.preserveDrawings ?? false
   whiteboardPreserveDrawings.value = cfg.general?.whiteboardPreserveDrawings ?? true
   angleSnapStep.value = (cfg.general?.angleSnapStep as 15 | 30 | 45 | undefined) ?? 15
+  autoStartEnabled.value = resolveAutoStart(cfg.general)
   syncLocaleFromConfig(cfg.general?.locale)
   window.addEventListener('keydown', onKeyDown, true)
 
@@ -188,16 +187,15 @@ onMounted(async () => {
     activeTab.value = e.payload
   })
 
-  try {
-    autoStartEnabled.value = await isEnabled()
-  } catch (error) {
-    console.error('Failed to check auto start status:', error)
-  }
+  unlistenConfigChanged = await listen<AppConfig>('config-changed', (event) => {
+    autoStartEnabled.value = resolveAutoStart(event.payload.general)
+  })
 })
 
 onUnmounted(() => {
   window.removeEventListener('keydown', onKeyDown, true)
   unlistenSwitchTab?.()
+  unlistenConfigChanged?.()
 })
 </script>
 
@@ -385,7 +383,6 @@ onUnmounted(() => {
       <GeneralTab
         v-else-if="activeTab === 'general'"
         :drag-mode="dragMode"
-        :toolbar-layout="toolbarLayout"
         :default-entry-mode="defaultEntryMode"
         :eraser-mode="eraserMode"
         :preserve-drawings="preserveDrawings"
@@ -393,7 +390,6 @@ onUnmounted(() => {
         :auto-start-enabled="autoStartEnabled"
         :angle-snap-step="angleSnapStep"
         @update:drag-mode="dragMode = $event"
-        @update:toolbar-layout="toolbarLayout = $event"
         @update:default-entry-mode="defaultEntryMode = $event"
         @update:eraser-mode="eraserMode = $event"
         @update:preserve-drawings="preserveDrawings = $event"

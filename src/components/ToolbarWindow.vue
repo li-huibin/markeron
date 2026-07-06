@@ -18,13 +18,7 @@ import {
   type OverlayStateSync,
   type OverlayPointerScreen,
 } from '../composables/overlayBridge'
-import {
-  isToolbarPinned,
-  resolveToolbarLayout,
-  resolveToolbarVisibility,
-  type ToolbarLayout,
-  type ToolbarVisibility,
-} from '../utils/toolbarSettings'
+import { isToolbarPinned, resolveToolbarVisibility, type ToolbarVisibility } from '../utils/toolbarSettings'
 import { restoreToolbarWindowPosition } from '../utils/toolbarWindow'
 import type { AppConfig } from '../types/app'
 
@@ -37,7 +31,6 @@ const penetrationMode = ref(false)
 const canUndo = ref(false)
 const canRedo = ref(false)
 const canClear = ref(false)
-const toolbarLayout = ref<ToolbarLayout>('detailed')
 const toolbarVisibility = ref<ToolbarVisibility>('space')
 const toolbarPinned = computed(() => isToolbarPinned(toolbarVisibility.value))
 const toolToolbarRef = ref<InstanceType<typeof ToolToolbar> | null>(null)
@@ -56,7 +49,6 @@ function applyOverlayState(state: OverlayStateSync) {
   canUndo.value = state.canUndo
   canRedo.value = state.canRedo
   canClear.value = state.canClear
-  toolbarLayout.value = state.toolbarLayout
 }
 
 function onPointerMove(e: PointerEvent) {
@@ -123,7 +115,6 @@ onMounted(async () => {
 
   try {
     const cfg = await invoke<AppConfig>('get_config')
-    toolbarLayout.value = resolveToolbarLayout(cfg.general)
     toolbarVisibility.value = resolveToolbarVisibility(cfg.general)
     await nextTick()
     void toolToolbarRef.value?.syncStandaloneWindowSize?.()
@@ -133,22 +124,13 @@ onMounted(async () => {
 
   unlisteners.push(
     await listen<OverlayStateSync>(OVERLAY_STATE_EVENT, (event) => {
-      const prevLayout = toolbarLayout.value
       applyOverlayState(event.payload)
-      if (prevLayout !== event.payload.toolbarLayout) {
-        void nextTick(() => toolToolbarRef.value?.syncStandaloneWindowSize?.())
-      }
     }),
   )
 
   unlisteners.push(
     await listen<AppConfig>('config-changed', (event) => {
-      const prevLayout = toolbarLayout.value
-      toolbarLayout.value = resolveToolbarLayout(event.payload.general)
       toolbarVisibility.value = resolveToolbarVisibility(event.payload.general)
-      if (prevLayout !== toolbarLayout.value) {
-        void nextTick(() => toolToolbarRef.value?.syncStandaloneWindowSize?.())
-      }
     }),
   )
 
@@ -187,7 +169,6 @@ onUnmounted(() => {
     <ToolToolbar
       ref="toolToolbarRef"
       standalone-window
-      :layout="toolbarLayout"
       :pinned="toolbarPinned"
       :current-tool="currentTool"
       :current-color="currentColor"

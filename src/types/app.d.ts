@@ -17,14 +17,13 @@ export interface AppConfig {
     whiteboardPreserveDrawings: boolean
     angleSnapStep?: 15 | 30 | 45
     toolbarVisibility?: ToolbarVisibility
-    toolbarLayout?: ToolbarLayout
     defaultEntryMode?: DefaultEntryMode
     eraserMode?: EraserMode
+    autoStart?: boolean
   }
 }
 
 export type ToolbarVisibility = 'space' | 'always'
-export type ToolbarLayout = 'simple' | 'detailed'
 export type DefaultEntryMode = 'screen' | 'whiteboard'
 export type EraserMode = 'stroke' | 'object'
 

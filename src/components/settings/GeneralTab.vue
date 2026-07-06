@@ -5,8 +5,6 @@ import { enable, isEnabled, disable } from '@tauri-apps/plugin-autostart'
 import type { AppConfig } from '../../types/app'
 import type { DragMode } from '../../utils/dragMode'
 import { DRAG_MODE_OPTIONS } from '../../utils/dragMode'
-import type { ToolbarLayout } from '../../utils/toolbarSettings'
-import { TOOLBAR_LAYOUT_OPTIONS } from '../../utils/toolbarSettings'
 import type { DefaultEntryMode } from '../../utils/entryMode'
 import { DEFAULT_ENTRY_MODE_OPTIONS } from '../../utils/entryMode'
 import type { EraserMode } from '../../utils/eraserMode'
@@ -26,7 +24,6 @@ const localeDropdownRef = ref<HTMLElement | null>(null)
 
 const snapStepOptions = [15, 30, 45] as const
 const dragModeOptions = DRAG_MODE_OPTIONS
-const toolbarLayoutOptions = TOOLBAR_LAYOUT_OPTIONS
 const defaultEntryModeOptions = DEFAULT_ENTRY_MODE_OPTIONS
 const eraserModeOptions = ERASER_MODE_OPTIONS
 const modKeyLabel = computed(() => (isMacOS() ? 'Command' : 'Ctrl'))
@@ -44,7 +41,6 @@ const dragModeDescKey = computed(() => {
 
 const props = defineProps<{
   dragMode: DragMode
-  toolbarLayout: ToolbarLayout
   defaultEntryMode: DefaultEntryMode
   eraserMode: EraserMode
   preserveDrawings: boolean
@@ -55,7 +51,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:dragMode': [value: DragMode]
-  'update:toolbarLayout': [value: ToolbarLayout]
   'update:defaultEntryMode': [value: DefaultEntryMode]
   'update:eraserMode': [value: EraserMode]
   'update:preserveDrawings': [value: boolean]
@@ -95,13 +90,25 @@ function closeLocaleDropdown(e: MouseEvent) {
 }
 
 async function toggleAutoStart() {
+  const nextValue = !props.autoStartEnabled
   try {
-    if (props.autoStartEnabled) {
-      await disable()
-    } else {
+    if (nextValue) {
       await enable()
+    } else {
+      await disable()
     }
-    emit('update:autoStartEnabled', await isEnabled())
+    const cfg = await invoke<AppConfig>('get_config')
+    if (!cfg.general)
+      cfg.general = {
+        dragMode: props.dragMode,
+        preserveDrawings: false,
+        whiteboardPreserveDrawings: true,
+        angleSnapStep: props.angleSnapStep,
+        autoStart: nextValue,
+      }
+    cfg.general.autoStart = nextValue
+    await invoke('save_general', { general: cfg.general })
+    emit('update:autoStartEnabled', nextValue)
   } catch (error) {
     console.error('Failed to toggle auto start:', error)
   }
@@ -120,7 +127,6 @@ async function setDragMode(mode: DragMode) {
     if (!cfg.general)
       cfg.general = {
         dragMode: mode,
-        toolbarLayout: props.toolbarLayout,
         preserveDrawings: false,
         whiteboardPreserveDrawings: true,
         angleSnapStep: props.angleSnapStep,
@@ -132,26 +138,6 @@ async function setDragMode(mode: DragMode) {
   }
 }
 
-async function setToolbarLayout(layout: ToolbarLayout) {
-  if (layout === props.toolbarLayout) return
-  emit('update:toolbarLayout', layout)
-  try {
-    const cfg = await invoke<AppConfig>('get_config')
-    if (!cfg.general)
-      cfg.general = {
-        dragMode: props.dragMode,
-        toolbarLayout: layout,
-        preserveDrawings: false,
-        whiteboardPreserveDrawings: true,
-        angleSnapStep: props.angleSnapStep,
-      }
-    cfg.general.toolbarLayout = layout
-    await invoke('save_general', { general: cfg.general })
-  } catch (error) {
-    console.error('Failed to save toolbar layout:', error)
-  }
-}
-
 async function setEraserMode(mode: EraserMode) {
   if (mode === props.eraserMode) return
   emit('update:eraserMode', mode)
@@ -160,7 +146,6 @@ async function setEraserMode(mode: EraserMode) {
     if (!cfg.general)
       cfg.general = {
         dragMode: props.dragMode,
-        toolbarLayout: props.toolbarLayout,
         defaultEntryMode: props.defaultEntryMode,
         eraserMode: mode,
         preserveDrawings: false,
@@ -182,7 +167,6 @@ async function setDefaultEntryMode(mode: DefaultEntryMode) {
     if (!cfg.general)
       cfg.general = {
         dragMode: props.dragMode,
-        toolbarLayout: props.toolbarLayout,
         defaultEntryMode: mode,
         preserveDrawings: false,
         whiteboardPreserveDrawings: true,
@@ -332,25 +316,6 @@ async function toggleAngleSnapStep(step: (typeof snapStepOptions)[number]) {
             />
           </button>
         </div>
-      </div>
-
-      <div class="settings-card">
-        <div class="settings-card-row">
-          <span class="text-[12.5px] settings-text-label">{{ t('settings.toolbarLayout') }}</span>
-          <div class="flex items-center gap-1 shrink-0 flex-wrap justify-end max-w-[62%]">
-            <button
-              v-for="mode in toolbarLayoutOptions"
-              :key="mode"
-              class="px-2 py-[4px] rounded-md ui-segment text-[10.5px] leading-none transition-colors duration-120 whitespace-nowrap"
-              :class="{ 'ui-segment--active': toolbarLayout === mode }"
-              :aria-pressed="toolbarLayout === mode"
-              @click="setToolbarLayout(mode)"
-            >
-              {{ t(`settings.toolbarLayout${mode === 'simple' ? 'Simple' : 'Detailed'}`) }}
-            </button>
-          </div>
-        </div>
-        <p class="settings-card-desc">{{ t('settings.toolbarLayoutDesc') }}</p>
       </div>
 
       <div class="settings-card">
