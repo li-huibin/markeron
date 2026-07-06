@@ -133,20 +133,29 @@ pub fn get_cursor_screen_pos() -> Option<(i32, i32)> {
 pub fn get_overlay_client_pointer(app: &AppHandle) -> Option<OverlayPointerPosition> {
     let (screen_x, screen_y) = get_cursor_screen_pos()?;
     let (mon_x, mon_y, _, _) = get_cursor_monitor_rect()?;
-    let window = app.get_webview_window("overlay")?;
-    let scale = window.scale_factor().ok()?;
     let dx = (screen_x - mon_x) as f64;
     let dy = (screen_y - mon_y) as f64;
     #[cfg(not(target_os = "macos"))]
-    let (x, y) = (dx / scale, dy / scale);
+    {
+        let window = app.get_webview_window("overlay")?;
+        let scale = window.scale_factor().ok()?;
+        Some(OverlayPointerPosition {
+            x: dx / scale,
+            y: dy / scale,
+            screen_x,
+            screen_y,
+        })
+    }
     #[cfg(target_os = "macos")]
-    let (x, y) = (dx, dy);
-    Some(OverlayPointerPosition {
-        x,
-        y,
-        screen_x,
-        screen_y,
-    })
+    {
+        app.get_webview_window("overlay")?;
+        Some(OverlayPointerPosition {
+            x: dx,
+            y: dy,
+            screen_x,
+            screen_y,
+        })
+    }
 }
 
 /// Returns (x, y, width, height) of the monitor containing the cursor.

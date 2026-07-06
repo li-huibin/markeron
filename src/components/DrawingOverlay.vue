@@ -236,8 +236,6 @@ async function setToolbarPopupVisible(visible: boolean) {
     TOOLBAR_PANEL_HEIGHT,
   )
   await invoke('set_toolbar_popup', { visible: true, x: left, y: top })
-  toolbarPanelHovered.value = true
-  scheduleEmitPointerScreenForToolbar()
 }
 
 function toggleToolbarPopupVisible() {
@@ -266,8 +264,6 @@ async function toggleToolbarPin() {
 async function syncOpenToolbarPopupWindow() {
   if (toolbarPinned.value || !showToolbarPopup.value) return
   await invoke('set_toolbar_popup', { visible: true, x: null, y: null })
-  toolbarPanelHovered.value = true
-  scheduleEmitPointerScreenForToolbar()
 }
 
 function applyDefaultEntryFromConfig(general?: AppConfig['general']) {
@@ -344,15 +340,70 @@ let lastPointerY = 0
 let lastScreenX = 0
 let lastScreenY = 0
 let pointerScreenKnown = false
-/** True once a DOM pointer event supplies screen coords (macOS Rust seed uses a different space). */
-let pointerScreenFromDom = false
 /** Gate custom SVG cursor until OS pointer is seeded (avoids flash at 0,0). */
 const customCursorPositionReady = ref(true)
 
 function emitPointerScreenForToolbar() {
   if (!pointerScreenKnown) return
-  if (isMacOS() && !pointerScreenFromDom) return
   void emit(OVERLAY_POINTER_SCREEN_EVENT, { x: lastScreenX, y: lastScreenY })
+}
+
+/** macOS transparent overlay may not receive pointermove until click — poll OS cursor via Rust. */
+let macPointerPollRafId: number | null = null
+let macPointerPollBusy = false
+
+function stopMacPointerPoll() {
+  if (macPointerPollRafId !== null) {
+    cancelAnimationFrame(macPointerPollRafId)
+    macPointerPollRafId = null
+  }
+}
+
+function scheduleMacPointerPollFrame() {
+  if (macPointerPollRafId !== null) return
+  macPointerPollRafId = requestAnimationFrame(() => {
+    macPointerPollRafId = null
+    void runMacPointerPollTick()
+  })
+}
+
+async function runMacPointerPollTick() {
+  if (!isMacOS() || !active.value || penetrationMode.value) return
+  if (!macPointerPollBusy) {
+    macPointerPollBusy = true
+    try {
+      const pos = await invoke<{
+        x: number
+        y: number
+        screenX: number
+        screenY: number
+      } | null>('get_overlay_pointer_position')
+      if (pos && active.value && !penetrationMode.value) {
+        lastPointerX = pos.x
+        lastPointerY = pos.y
+        lastScreenX = pos.screenX
+        lastScreenY = pos.screenY
+        pointerScreenKnown = true
+        mousePos.value = { x: pos.x, y: pos.y }
+        void emit(OVERLAY_POINTER_SCREEN_EVENT, { x: pos.screenX, y: pos.screenY })
+        if (!toolbarPanelHovered.value && !toolbarPanelDragging.value) {
+          updateCursorEl(pos.x, pos.y)
+        }
+      }
+    } catch {
+      // ignore transient IPC failures
+    } finally {
+      macPointerPollBusy = false
+    }
+  }
+  if (active.value && !penetrationMode.value) {
+    scheduleMacPointerPollFrame()
+  }
+}
+
+function startMacPointerPoll() {
+  if (!isMacOS()) return
+  scheduleMacPointerPollFrame()
 }
 
 let pointerScreenRafId: number | null = null
@@ -395,8 +446,8 @@ function onGlobalPointerMove(e: PointerEvent) {
   lastScreenX = e.screenX
   lastScreenY = e.screenY
   pointerScreenKnown = true
-  pointerScreenFromDom = true
   mousePos.value = { x: e.clientX, y: e.clientY }
+  if (isMacOS()) return
   if (sessionActive.value && !penetrationMode.value) {
     scheduleEmitPointerScreenForToolbar()
   }
@@ -404,6 +455,19 @@ function onGlobalPointerMove(e: PointerEvent) {
     updateCursorEl(e.clientX, e.clientY)
   }
 }
+
+watch(
+  () => [active.value, penetrationMode.value] as const,
+  ([isDrawing, isPenetrating]) => {
+    if (!isMacOS()) return
+    if (isDrawing && !isPenetrating) {
+      startMacPointerPoll()
+    } else {
+      stopMacPointerPoll()
+    }
+  },
+  { immediate: true },
+)
 
 watch(
   sessionActive,
@@ -682,9 +746,8 @@ function onPointerMove(e: PointerEvent) {
   lastScreenX = e.screenX
   lastScreenY = e.screenY
   pointerScreenKnown = true
-  pointerScreenFromDom = true
   pointerModDown.value = modDown(e)
-  if (!toolbarPanelHovered.value) {
+  if (!isMacOS() && !toolbarPanelHovered.value) {
     updateCursorEl(e.clientX, e.clientY)
   }
 
@@ -1076,7 +1139,6 @@ onMounted(async () => {
       penetrationMode.value = mode === 'penetration'
       if (mode === 'drawing') {
         customCursorPositionReady.value = false
-        pointerScreenFromDom = false
       } else if (mode === 'hidden') {
         customCursorPositionReady.value = true
       }
@@ -1186,6 +1248,7 @@ onUnmounted(() => {
     cancelAnimationFrame(pointerScreenRafId)
     pointerScreenRafId = null
   }
+  stopMacPointerPoll()
   unlisteners.forEach((fn) => fn())
   disposeTooltip()
   destroy()
