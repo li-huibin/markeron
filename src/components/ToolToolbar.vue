@@ -66,7 +66,9 @@ const customOutlineColor = computed(() => normalizeTextOutline(props.textOutline
 const expanded = ref(false)
 const showFullPanel = computed(() => props.layout === 'detailed' || expanded.value)
 
-const panelW = computed(() => (showFullPanel.value ? 272 : 304))
+// Keep compact and expanded states the same width so the standalone toolbar never jumps sideways.
+const PANEL_WIDTH = 272
+const panelW = computed(() => PANEL_WIDTH)
 const closeOnSelect = computed(() => !props.pinned)
 
 function needsWhiteCheck(ri: number, ci: number): boolean {
@@ -506,13 +508,13 @@ onUnmounted(() => {
 
         <!-- Simple compact tools -->
         <div v-if="!showFullPanel" class="px-3 pb-2">
-          <div class="grid grid-cols-8 gap-0.5">
+          <div class="grid grid-cols-8 gap-[3px]">
             <button
               v-for="tool in tools"
               :key="tool.id"
               :aria-label="`${tool.label} (${tool.key})`"
               :aria-pressed="currentTool === tool.id"
-              class="flex items-center justify-center h-8 border-none rounded-lg cursor-pointer transition-all duration-150"
+              class="flex min-w-0 items-center justify-center h-[30px] border-none rounded-[9px] cursor-pointer transition-all duration-150"
               :class="currentTool === tool.id ? 'overlay-tool-btn--active' : 'overlay-tool-btn'"
               :title="`${tool.label} (${tool.key})`"
               @click="selectTool(tool.id)"
