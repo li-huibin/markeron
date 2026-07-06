@@ -342,11 +342,14 @@ let lastPointerY = 0
 let lastScreenX = 0
 let lastScreenY = 0
 let pointerScreenKnown = false
+/** True once a DOM pointer event supplies screen coords (macOS Rust seed uses a different space). */
+let pointerScreenFromDom = false
 /** Gate custom SVG cursor until OS pointer is seeded (avoids flash at 0,0). */
 const customCursorPositionReady = ref(true)
 
 function emitPointerScreenForToolbar() {
   if (!pointerScreenKnown) return
+  if (isMacOS() && !pointerScreenFromDom) return
   void emit(OVERLAY_POINTER_SCREEN_EVENT, { x: lastScreenX, y: lastScreenY })
 }
 
@@ -390,6 +393,7 @@ function onGlobalPointerMove(e: PointerEvent) {
   lastScreenX = e.screenX
   lastScreenY = e.screenY
   pointerScreenKnown = true
+  pointerScreenFromDom = true
   mousePos.value = { x: e.clientX, y: e.clientY }
   if (sessionActive.value && !penetrationMode.value) {
     scheduleEmitPointerScreenForToolbar()
@@ -676,6 +680,7 @@ function onPointerMove(e: PointerEvent) {
   lastScreenX = e.screenX
   lastScreenY = e.screenY
   pointerScreenKnown = true
+  pointerScreenFromDom = true
   pointerModDown.value = modDown(e)
   if (!toolbarPanelHovered.value) {
     updateCursorEl(e.clientX, e.clientY)
@@ -1069,6 +1074,7 @@ onMounted(async () => {
       penetrationMode.value = mode === 'penetration'
       if (mode === 'drawing') {
         customCursorPositionReady.value = false
+        pointerScreenFromDom = false
       } else if (mode === 'hidden') {
         customCursorPositionReady.value = true
       }

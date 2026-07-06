@@ -8,7 +8,13 @@ import { TOOL_DEFS, WIDTH_PRESETS } from '../constants/tools'
 import { COLOR_ROWS } from '../constants/colors'
 import { TEXT_OUTLINE_WIDTH_PRESETS, normalizeTextOutline, resolveTextOutlineColor } from '../constants/textOutline'
 import { loadToolbarPosition, saveToolbarPosition, clampToolbarWindowPosition } from '../utils/toolbarPosition'
-import { fitToolbarWindow, measureToolbarPanelHeight, fetchOverlayMonitorBounds } from '../utils/toolbarWindow'
+import {
+  fitToolbarWindow,
+  measureToolbarPanelHeight,
+  fetchOverlayMonitorBounds,
+  getToolbarWindowScreenOrigin,
+  refreshToolbarWindowScreenOrigin,
+} from '../utils/toolbarWindow'
 import type { MonitorLogicalBounds } from '../utils/toolbarPosition'
 import { isPointerOverPanelRect } from '../utils/toolbarPanelHover'
 import { LogicalPosition } from '@tauri-apps/api/dpi'
@@ -97,7 +103,7 @@ function updateCustomTextOutlineColor(color: string) {
 function toggleExpanded() {
   expanded.value = !expanded.value
   // Click target is inside the panel — keep overlay custom cursor suppressed during resize.
-  emit('panelHover', true)
+  emitPanelHover(true)
   nextTick(() => {
     initPosition()
     scheduleSyncStandaloneWindowSize()
@@ -134,14 +140,26 @@ async function syncStandaloneWindowSize() {
   const width = panelW.value
   const height = measureToolbarPanelHeight(panelRef.value)
   await fitToolbarWindow(width, height)
+  if (isMacOS()) {
+    await refreshToolbarWindowScreenOrigin()
+  }
   syncPanelHover()
+}
+
+let lastPanelHoverEmitted: boolean | null = null
+
+/** Avoid redundant cross-window hover events that flicker the overlay pen cursor. */
+function emitPanelHover(hovering: boolean) {
+  if (lastPanelHoverEmitted === hovering) return
+  lastPanelHoverEmitted = hovering
+  emit('panelHover', hovering)
 }
 
 function probePanelHoverAtScreen(screenX: number, screenY: number) {
   if (!props.standaloneWindow || !panelRef.value || !positioned.value) return
   const r = panelRef.value.getBoundingClientRect()
-  const inside = isPointerOverPanelRect(screenX, screenY, window.screenX, window.screenY, r)
-  emit('panelHover', inside)
+  const origin = getToolbarWindowScreenOrigin()
+  emitPanelHover(isPointerOverPanelRect(screenX, screenY, origin.x, origin.y, r))
 }
 
 function scheduleSyncStandaloneWindowSize() {
@@ -155,13 +173,13 @@ function scheduleSyncStandaloneWindowSize() {
 
 function syncPanelHover() {
   if (!panelRef.value || !positioned.value) {
-    emit('panelHover', false)
+    emitPanelHover(false)
     return
   }
   const r = panelRef.value.getBoundingClientRect()
   const inside =
     props.pointerX >= r.left && props.pointerX <= r.right && props.pointerY >= r.top && props.pointerY <= r.bottom
-  emit('panelHover', inside)
+  emitPanelHover(inside)
 }
 
 function initPosition() {
@@ -191,6 +209,9 @@ function initPosition() {
     panelLeft.value = clamped.left
     panelTop.value = clamped.top
     positioned.value = true
+    if (props.standaloneWindow && isMacOS()) {
+      void refreshToolbarWindowScreenOrigin()
+    }
     syncPanelHover()
     void syncStandaloneWindowSize()
   })
@@ -246,7 +267,7 @@ function onPenetrationModeClick() {
 function startDrag(e: PointerEvent) {
   if (e.button !== 0) return
   isDragging.value = true
-  emit('panelHover', true)
+  emitPanelHover(true)
   emit('panelDrag', true)
   dragPointerId = e.pointerId
   captureTarget = e.currentTarget as HTMLElement
@@ -311,6 +332,9 @@ function stopDrag(e?: PointerEvent) {
       const logical = pos.toLogical(scale)
       saveToolbarPosition(logical.x, logical.y, true)
       await invoke('raise_toolbar')
+      if (isMacOS()) {
+        await refreshToolbarWindowScreenOrigin()
+      }
     })()
     syncPanelHover()
     return
@@ -323,7 +347,7 @@ function stopDrag(e?: PointerEvent) {
 
 function onPanelPointerLeave() {
   if (isDragging.value) return
-  emit('panelHover', false)
+  emitPanelHover(false)
 }
 
 function stopDragOnBlur() {
@@ -376,7 +400,7 @@ onUnmounted(() => {
   }
   panelResizeObserver?.disconnect()
   panelResizeObserver = null
-  emit('panelHover', false)
+  emitPanelHover(false)
   window.removeEventListener('pointermove', onPointerMove)
   window.removeEventListener('pointerup', stopDrag)
   window.removeEventListener('pointercancel', stopDrag)
@@ -413,7 +437,7 @@ onUnmounted(() => {
             }
       "
       @mousedown.stop
-      @pointerenter="emit('panelHover', true)"
+      @pointerenter="emitPanelHover(true)"
       @pointerleave="onPanelPointerLeave"
     >
       <div

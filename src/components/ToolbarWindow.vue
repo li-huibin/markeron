@@ -19,7 +19,9 @@ import {
   type OverlayPointerScreen,
 } from '../composables/overlayBridge'
 import { isToolbarPinned, resolveToolbarVisibility, type ToolbarVisibility } from '../utils/toolbarSettings'
-import { restoreToolbarWindowPosition } from '../utils/toolbarWindow'
+import { restoreToolbarWindowPosition, refreshToolbarWindowScreenOrigin } from '../utils/toolbarWindow'
+import { isMacOS } from '../utils/platform'
+import { getCurrentWindow } from '@tauri-apps/api/window'
 import type { AppConfig } from '../types/app'
 
 const currentTool = ref<Tool>('pen')
@@ -54,7 +56,8 @@ function applyOverlayState(state: OverlayStateSync) {
 function onPointerMove(e: PointerEvent) {
   pointerX.value = e.clientX
   pointerY.value = e.clientY
-  toolToolbarRef.value?.probePanelHoverAtScreen?.(e.screenX, e.screenY)
+  // Client-space hover is synced via pointerX/Y watch → syncPanelHover.
+  // Screen-space probe here conflicted with syncPanelHover on macOS (unreliable window.screenX).
 }
 
 async function onToolbarClose() {
@@ -109,6 +112,20 @@ onMounted(async () => {
 
   try {
     await restoreToolbarWindowPosition()
+    if (isMacOS()) {
+      await refreshToolbarWindowScreenOrigin()
+      const toolbarWindow = getCurrentWindow()
+      unlisteners.push(
+        await toolbarWindow.onMoved(() => {
+          void refreshToolbarWindowScreenOrigin()
+        }),
+      )
+      unlisteners.push(
+        await toolbarWindow.onResized(() => {
+          void refreshToolbarWindowScreenOrigin()
+        }),
+      )
+    }
   } catch (error) {
     console.error('Failed to restore toolbar window position:', error)
   }

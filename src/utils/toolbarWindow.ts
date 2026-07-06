@@ -8,6 +8,29 @@ import {
   saveToolbarPosition,
   type MonitorLogicalBounds,
 } from './toolbarPosition'
+import { isMacOS } from './platform'
+
+/** Cached toolbar window origin for screen-space hit tests (WKWebView `window.screenX` is unreliable on macOS). */
+let cachedToolbarScreenOrigin: { x: number; y: number } | null = null
+
+export function getToolbarWindowScreenOrigin(): { x: number; y: number } {
+  if (isMacOS() && cachedToolbarScreenOrigin) {
+    return cachedToolbarScreenOrigin
+  }
+  return { x: window.screenX, y: window.screenY }
+}
+
+export async function refreshToolbarWindowScreenOrigin(): Promise<{ x: number; y: number }> {
+  if (!isMacOS()) {
+    cachedToolbarScreenOrigin = { x: window.screenX, y: window.screenY }
+    return cachedToolbarScreenOrigin
+  }
+  const win = getCurrentWindow()
+  const [pos, scale] = await Promise.all([win.outerPosition(), win.scaleFactor()])
+  const logical = pos.toLogical(scale)
+  cachedToolbarScreenOrigin = { x: logical.x, y: logical.y }
+  return cachedToolbarScreenOrigin
+}
 
 const TOOLBAR_PANEL_WIDTH = 272
 const TOOLBAR_PANEL_HEIGHT = 500
