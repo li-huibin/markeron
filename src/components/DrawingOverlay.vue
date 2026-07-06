@@ -950,10 +950,20 @@ watch([currentTool, currentColor], () => {
   void refreshCustomCursorPosition()
 })
 
-watch(showCustomCursor, (visible) => {
+watch(showCustomCursor, (visible, wasVisible) => {
   setMacOverlaySystemCursorHidden(visible)
   if (visible) {
-    void refreshCustomCursorPosition()
+    void (async () => {
+      // Re-focus overlay when resuming the custom pen (matches drawing-mode entry).
+      if (isMacOS() && !wasVisible) {
+        try {
+          await getCurrentWindow().setFocus()
+        } catch {
+          // non-fatal
+        }
+      }
+      await refreshCustomCursorPosition()
+    })()
   }
 })
 

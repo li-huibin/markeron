@@ -157,6 +157,9 @@ function emitPanelHover(hovering: boolean) {
 
 function probePanelHoverAtScreen(screenX: number, screenY: number) {
   if (!props.standaloneWindow || !panelRef.value || !positioned.value) return
+  // macOS standalone: screen-space probe disagrees with pointer enter/leave and keeps
+  // toolbarPanelHovered true on the overlay — rely on DOM boundary events instead.
+  if (isMacOS()) return
   const r = panelRef.value.getBoundingClientRect()
   const origin = getToolbarWindowScreenOrigin()
   emitPanelHover(isPointerOverPanelRect(screenX, screenY, origin.x, origin.y, r))
@@ -176,18 +179,13 @@ function syncPanelHover() {
     emitPanelHover(false)
     return
   }
-  // macOS standalone: toolbar client coords go stale once the cursor leaves for the overlay.
-  // Hover is driven by OS-level screen probe from the overlay poll loop.
+  // macOS standalone: client coords go stale once the cursor returns to the overlay window.
+  // Hover is driven by pointer enter/leave on the panel element.
   if (props.standaloneWindow && isMacOS()) return
   const r = panelRef.value.getBoundingClientRect()
   const inside =
     props.pointerX >= r.left && props.pointerX <= r.right && props.pointerY >= r.top && props.pointerY <= r.bottom
   emitPanelHover(inside)
-}
-
-function onPanelPointerEnter() {
-  if (props.standaloneWindow && isMacOS()) return
-  emitPanelHover(true)
 }
 
 function initPosition() {
@@ -445,7 +443,7 @@ onUnmounted(() => {
             }
       "
       @mousedown.stop
-      @pointerenter="onPanelPointerEnter"
+      @pointerenter="emitPanelHover(true)"
       @pointerleave="onPanelPointerLeave"
     >
       <div
