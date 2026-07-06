@@ -237,6 +237,7 @@ async function setToolbarPopupVisible(visible: boolean) {
   )
   await invoke('set_toolbar_popup', { visible: true, x: left, y: top })
   toolbarPanelHovered.value = true
+  scheduleEmitPointerScreenForToolbar()
 }
 
 function toggleToolbarPopupVisible() {
@@ -266,6 +267,7 @@ async function syncOpenToolbarPopupWindow() {
   if (toolbarPinned.value || !showToolbarPopup.value) return
   await invoke('set_toolbar_popup', { visible: true, x: null, y: null })
   toolbarPanelHovered.value = true
+  scheduleEmitPointerScreenForToolbar()
 }
 
 function applyDefaultEntryFromConfig(general?: AppConfig['general']) {

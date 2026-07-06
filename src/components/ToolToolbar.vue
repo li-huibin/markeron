@@ -176,6 +176,9 @@ function syncPanelHover() {
     emitPanelHover(false)
     return
   }
+  // macOS standalone: pointerX/Y go stale once the cursor returns to the overlay window.
+  // Hover is driven by overlay screen-space probe + pointer enter/leave on the panel.
+  if (props.standaloneWindow && isMacOS()) return
   const r = panelRef.value.getBoundingClientRect()
   const inside =
     props.pointerX >= r.left && props.pointerX <= r.right && props.pointerY >= r.top && props.pointerY <= r.bottom
