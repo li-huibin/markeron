@@ -28,7 +28,9 @@ import { canStartElementDrag as canStartElementDragGate } from '../utils/dragInt
 import { isDragEnabled, resolveDragMode, type DragMode } from '../utils/dragMode'
 import { isToolbarPinned, resolveToolbarVisibility, type ToolbarVisibility } from '../utils/toolbarSettings'
 import { resolveDefaultEntryMode, shouldClearWhiteboardOnEntry, type DefaultEntryMode } from '../utils/entryMode'
-import { logDiagnostic } from '../utils/diagnosticEvents'
+import { logDiagnostic, logSessionEvent, logActionEvent } from '../utils/diagnosticEvents'
+import type { MonitorLogicalBounds } from '../utils/toolbarPosition'
+import { toolbarPopupScreenPosition } from '../utils/toolbarPosition'
 import { resolveEraserMode, type EraserMode } from '../utils/eraserMode'
 import { useI18n } from '../i18n'
 
@@ -125,6 +127,7 @@ function onContextMenu(e: MouseEvent) {
   hideToolbarPopupForCanvasInteraction()
   quickColorsPos.value = { x: e.clientX, y: e.clientY }
   showQuickColors.value = true
+  logActionEvent('quick colors opened', { reason: 'context-menu' })
 }
 
 function selectQuickColor(color: string) {
@@ -211,12 +214,41 @@ function applyToolbarFromConfig(general?: AppConfig['general']) {
 const TOOLBAR_PANEL_HEIGHT = 500
 const TOOLBAR_PANEL_WIDTH = 272
 
-function clampToolbarPosition(left: number, top: number, panelW: number, panelH: number) {
-  const margin = 12
-  return {
-    left: Math.max(margin, Math.min(left, window.innerWidth - panelW - margin)),
-    top: Math.max(margin, Math.min(top, window.innerHeight - panelH - margin)),
+async function ensureOverlayLayoutReady(): Promise<void> {
+  if (overlayLayoutReady.value) return
+  if (overlayResizeInFlight) await overlayResizeInFlight
+  else await scheduleOverlayResize()
+}
+
+async function openToolbarPopupAtPointer(): Promise<void> {
+  await ensureOverlayLayoutReady()
+  await seedPointerPosition()
+
+  const panelW = TOOLBAR_PANEL_WIDTH
+  const panelH = TOOLBAR_PANEL_HEIGHT
+  let monitorBounds: MonitorLogicalBounds | null = null
+  try {
+    monitorBounds = await invoke<MonitorLogicalBounds | null>('get_overlay_monitor_logical_bounds')
+  } catch {
+    // non-fatal for positioning; still log client-side coords
   }
+  const { left, top } = toolbarPopupScreenPosition(lastPointerX, lastPointerY, panelW, panelH, monitorBounds, {
+    width: window.innerWidth,
+    height: window.innerHeight,
+  })
+  const anchorScreen = monitorBounds
+    ? { x: monitorBounds.left + lastPointerX, y: monitorBounds.top + lastPointerY }
+    : null
+  logActionEvent('toolbar popup opened', {
+    pointerClient: { x: lastPointerX, y: lastPointerY },
+    pointerScreen: pointerScreenKnown ? { x: lastScreenX, y: lastScreenY } : null,
+    anchorScreen,
+    panel: { left, top, width: panelW, height: panelH },
+    overlayViewport: { width: window.innerWidth, height: window.innerHeight },
+    monitorBounds,
+    devicePixelRatio: window.devicePixelRatio,
+  })
+  await invoke('set_toolbar_popup', { visible: true, x: left, y: top })
 }
 
 async function setToolbarPopupVisible(visible: boolean) {
@@ -229,14 +261,7 @@ async function setToolbarPopupVisible(visible: boolean) {
     await invoke('set_toolbar_popup', { visible: false, x: null, y: null })
     return
   }
-  const panelW = TOOLBAR_PANEL_WIDTH
-  const { left, top } = clampToolbarPosition(
-    lastPointerX - panelW / 2,
-    lastPointerY - TOOLBAR_PANEL_HEIGHT / 2,
-    panelW,
-    TOOLBAR_PANEL_HEIGHT,
-  )
-  await invoke('set_toolbar_popup', { visible: true, x: left, y: top })
+  await openToolbarPopupAtPointer()
 }
 
 function toggleToolbarPopupVisible() {
@@ -257,14 +282,16 @@ async function toggleToolbarPin() {
     if (!cfg.general) return
     cfg.general.toolbarVisibility = nextVisibility
     await invoke('save_general', { general: cfg.general })
+    logActionEvent('toolbar pin toggled', { reason: 'toolbar', visibility: nextVisibility })
   } catch (error) {
     console.error('Failed to toggle toolbar pin:', error)
+    logActionEvent('toolbar pin toggle failed', { reason: 'toolbar', error: String(error) }, 'error')
   }
 }
 
 async function syncOpenToolbarPopupWindow() {
   if (toolbarPinned.value || !showToolbarPopup.value) return
-  await invoke('set_toolbar_popup', { visible: true, x: null, y: null })
+  await openToolbarPopupAtPointer()
 }
 
 function applyDefaultEntryFromConfig(general?: AppConfig['general']) {
@@ -304,12 +331,16 @@ async function enterWhiteboardMode(options?: { fromDefaultEntry?: boolean }) {
     })
   ) {
     hardReset()
+    logActionEvent('canvas hard reset', { reason: 'whiteboard-entry' })
   }
   whiteboardMode.value = true
   showQuickColors.value = false
   textBoxPos.value = null
   void syncWhiteboardMode(true)
   currentTool.value = 'pen'
+  logSessionEvent('whiteboard entered', {
+    fromDefaultEntry: options?.fromDefaultEntry ?? false,
+  })
   showTip(t('overlay.whiteboardReady'))
 }
 
@@ -321,7 +352,9 @@ function exitWhiteboardMode() {
   textBoxPos.value = null
   if (!whiteboardPreserveDrawings.value) {
     hardReset()
+    logActionEvent('canvas hard reset', { reason: 'whiteboard-exit' })
   }
+  logSessionEvent('whiteboard exited')
   showTip(t('overlay.whiteboardExit'))
 }
 
@@ -454,6 +487,11 @@ function onGlobalPointerMove(e: PointerEvent) {
   lastScreenY = e.screenY
   pointerScreenKnown = true
   mousePos.value = { x: e.clientX, y: e.clientY }
+  // Cross-window: leaving the toolbar webview may not fire pointerleave; clear stale
+  // hover so the custom pen cursor is not suppressed while drawing on the overlay.
+  if (!isMacOS() && active.value && !penetrationMode.value) {
+    toolbarPanelHovered.value = false
+  }
   if (isMacOS()) return
   if (sessionActive.value && !penetrationMode.value) {
     scheduleEmitPointerScreenForToolbar()
@@ -523,6 +561,11 @@ function resizeCanvas() {
   redrawAll()
 }
 
+/** False while overlay canvas is catching up after a monitor move / DPI change. */
+const overlayLayoutReady = ref(true)
+let overlayResizeGeneration = 0
+let overlayResizeInFlight: Promise<void> | null = null
+
 /** Wait for Win32/WebView2 to finish DPI relayout after a monitor move. */
 function afterLayoutFrames(frameCount = 2): Promise<void> {
   return new Promise((resolve) => {
@@ -537,10 +580,36 @@ function afterLayoutFrames(frameCount = 2): Promise<void> {
   })
 }
 
-async function scheduleOverlayResize() {
-  await afterLayoutFrames()
-  resizeCanvas()
-  watchDpr()
+async function scheduleOverlayResize(): Promise<void> {
+  if (overlayResizeInFlight) return overlayResizeInFlight
+
+  const generation = ++overlayResizeGeneration
+  overlayLayoutReady.value = false
+
+  overlayResizeInFlight = (async () => {
+    try {
+      // WebView2 applies per-monitor DPI asynchronously; extra frames on Windows avoid
+      // drawing with a canvas sized for the previous monitor on first activation.
+      await afterLayoutFrames(isMacOS() ? 2 : 4)
+      if (generation !== overlayResizeGeneration) return
+      resizeCanvas()
+
+      if (!isMacOS()) {
+        await afterLayoutFrames(2)
+        if (generation !== overlayResizeGeneration) return
+        resizeCanvas()
+      }
+
+      watchDpr()
+    } finally {
+      if (generation === overlayResizeGeneration) {
+        overlayLayoutReady.value = true
+      }
+      overlayResizeInFlight = null
+    }
+  })()
+
+  return overlayResizeInFlight
 }
 
 let toolBeforeModifier: string | null = null
@@ -693,6 +762,10 @@ function finishActivePointerInteraction() {
 async function onPointerDown(e: PointerEvent) {
   if (e.button !== 0) return
   if (penetrationMode.value || !active.value || showQuickColors.value) return
+
+  if (!overlayLayoutReady.value) {
+    await scheduleOverlayResize()
+  }
 
   lastPointerX = e.clientX
   lastPointerY = e.clientY
@@ -880,7 +953,6 @@ const onKeyDown = createKeyDownHandler(
     undo,
     redo,
     clearAll,
-    exitDrawing,
     togglePenetrationMode,
     enterWhiteboardMode,
     exitWhiteboardMode,
@@ -892,6 +964,9 @@ const onKeyDown = createKeyDownHandler(
     },
     toggleToolbarPopupVisible,
     commitCurrentTextBox,
+    exitDrawing: () => {
+      exitDrawing('keyboard')
+    },
   },
 )
 
@@ -936,7 +1011,7 @@ const showDragCursor = computed(
   () =>
     isDragEnabled(dragMode.value) &&
     (isMoving.value ||
-      (hoveredActionInfo.value && !isDrawing.value && (dragMode.value === 'hover' || pointerModDown.value))),
+      (hoveredActionInfo.value && !isDrawing.value && dragMode.value === 'modifier' && pointerModDown.value)),
 )
 
 const wantsCustomCursor = computed(
@@ -1034,7 +1109,50 @@ async function resumeDrawingFromToolbar() {
   }
 }
 
+function logToolbarAction(action: ToolbarAction) {
+  const reason = 'toolbar' as const
+  switch (action.type) {
+    case 'selectTool':
+      logActionEvent('tool selected', { reason, tool: action.tool })
+      break
+    case 'selectColor':
+      logActionEvent('color selected', { reason, color: action.color })
+      break
+    case 'updateLineWidth':
+      logActionEvent('line width changed', { reason, width: action.width })
+      break
+    case 'updateTextOutline':
+      logActionEvent('text outline changed', { reason, textOutline: action.textOutline })
+      break
+    case 'undo':
+      logActionEvent('undo', { reason })
+      break
+    case 'redo':
+      logActionEvent('redo', { reason })
+      break
+    case 'clearAll':
+      logActionEvent('canvas cleared', { reason })
+      break
+    case 'toggleWhiteboard':
+      logActionEvent('whiteboard toggle requested', { reason })
+      break
+    case 'copy':
+      logActionEvent('copy requested', { reason, mode: whiteboardMode.value ? 'whiteboard' : 'screen' })
+      break
+    case 'togglePenetration':
+      logActionEvent('toggle penetration requested', { reason })
+      break
+    case 'togglePin':
+      logActionEvent('toolbar pin toggle requested', { reason })
+      break
+    case 'exitDrawing':
+      logActionEvent('exit drawing requested', { reason })
+      break
+  }
+}
+
 async function handleToolbarAction(action: ToolbarAction) {
+  logToolbarAction(action)
   switch (action.type) {
     case 'selectTool':
       await resumeDrawingFromToolbar()
@@ -1079,7 +1197,7 @@ async function handleToolbarAction(action: ToolbarAction) {
       await toggleToolbarPin()
       break
     case 'exitDrawing':
-      exitDrawing()
+      exitDrawing('toolbar')
       break
   }
   syncOverlayStateToToolbar()
@@ -1140,6 +1258,7 @@ onMounted(async () => {
   )
   unlisteners.push(
     await listen('overlay-geometry-changed', () => {
+      overlayLayoutReady.value = false
       void scheduleOverlayResize()
     }),
   )
@@ -1182,9 +1301,11 @@ onMounted(async () => {
       const mode = event.payload as OverlaySessionMode
       const previousMode = lastOverlayMode
       lastOverlayMode = mode
+      logSessionEvent('overlay mode changed', { from: previousMode, to: mode })
       penetrationMode.value = mode === 'penetration'
       if (mode === 'drawing') {
         customCursorPositionReady.value = false
+        overlayLayoutReady.value = false
       } else if (mode === 'hidden') {
         customCursorPositionReady.value = true
       }
@@ -1199,6 +1320,7 @@ onMounted(async () => {
         showToolbarPopup.value = false
         if (!preserveDrawings.value) {
           hardReset()
+          logActionEvent('canvas hard reset', { reason: 'exit-drawing' })
         }
       } else if (mode === 'drawing') {
         toolbarPanelHovered.value = false
@@ -1209,9 +1331,9 @@ onMounted(async () => {
         if (previousMode === 'hidden') {
           currentTool.value = 'pen'
           applyDefaultEntryOnActivate()
-          void scheduleOverlayResize()
         }
         void (async () => {
+          await scheduleOverlayResize()
           await seedPointerPosition()
           customCursorPositionReady.value = true
           await refreshCustomCursorPosition()
@@ -1235,6 +1357,7 @@ onMounted(async () => {
   unlisteners.push(
     await listen('clear-drawing', () => {
       hardReset()
+      logActionEvent('canvas cleared', { reason: 'clear-drawing-event' })
       syncOverlayStateToToolbar()
     }),
   )
@@ -1329,7 +1452,10 @@ function onPointerLeave(e: PointerEvent) {
 }
 
 async function copyScreen(reason = 'unknown') {
-  if (isCopying) return
+  if (isCopying) {
+    logDiagnostic('copy', 'copyScreen skipped', { reason, cause: 'already-copying' }, 'warn')
+    return
+  }
   logDiagnostic('copy', 'copyScreen invoked', { reason })
   isCopying = true
   const restoreToolbar = toolbarPinned.value || showToolbarPopup.value
@@ -1353,6 +1479,7 @@ async function copyScreen(reason = 'unknown') {
     showTip(t('overlay.copiedToClipboard'))
   } catch (err) {
     console.error('Copy screen failed:', err)
+    logDiagnostic('copy', 'copyScreen failed', { reason, error: String(err) }, 'error')
     showTip(t('overlay.copyFailed'))
   } finally {
     hideUiForCapture.value = false
@@ -1368,9 +1495,15 @@ async function copyScreen(reason = 'unknown') {
 }
 
 async function copyWhiteboard(reason = 'unknown') {
-  if (isCopying) return
+  if (isCopying) {
+    logDiagnostic('copy', 'copyWhiteboard skipped', { reason, cause: 'already-copying' }, 'warn')
+    return
+  }
   const dataUrl = exportAsDataURL('#FFFFFF')
-  if (!dataUrl) return
+  if (!dataUrl) {
+    logDiagnostic('copy', 'copyWhiteboard skipped', { reason, cause: 'empty-canvas' }, 'warn')
+    return
+  }
 
   logDiagnostic('copy', 'copyWhiteboard invoked', { reason })
   isCopying = true
@@ -1380,13 +1513,15 @@ async function copyWhiteboard(reason = 'unknown') {
     showTip(t('overlay.copiedToClipboard'))
   } catch (err) {
     console.error('Copy whiteboard failed:', err)
+    logDiagnostic('copy', 'copyWhiteboard failed', { reason, error: String(err) }, 'error')
     showTip(t('overlay.copyFailed'))
   } finally {
     isCopying = false
   }
 }
 
-function exitDrawing() {
+function exitDrawing(reason: 'keyboard' | 'toolbar' | 'unknown' = 'unknown') {
+  logActionEvent('exit drawing', { reason })
   commitCurrentTextBox()
   showQuickColors.value = false
   textBoxPos.value = null

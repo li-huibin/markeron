@@ -19,6 +19,42 @@ export interface MonitorLogicalBounds {
   height: number
 }
 
+/** Overlay client (CSS) coords → screen logical position for toolbar window placement. */
+export function overlayClientToScreenLogical(
+  clientX: number,
+  clientY: number,
+  monitor: MonitorLogicalBounds,
+): { x: number; y: number } {
+  return {
+    x: monitor.left + clientX,
+    y: monitor.top + clientY,
+  }
+}
+
+/** Screen-logical top-left for a space-triggered toolbar popup centered on the pointer. */
+export function toolbarPopupScreenPosition(
+  clientX: number,
+  clientY: number,
+  panelWidth: number,
+  panelHeight: number,
+  monitor: MonitorLogicalBounds | null,
+  fallbackViewport?: { width: number; height: number },
+): { left: number; top: number } {
+  if (monitor) {
+    const anchor = overlayClientToScreenLogical(clientX, clientY, monitor)
+    const left = anchor.x - panelWidth / 2
+    const top = anchor.y - panelHeight / 2
+    return clampToolbarWindowPosition(left, top, panelWidth, panelHeight, monitor, 12)
+  }
+  const vw = fallbackViewport?.width ?? 1920
+  const vh = fallbackViewport?.height ?? 1080
+  const margin = 12
+  return {
+    left: Math.max(margin, Math.min(clientX - panelWidth / 2, vw - panelWidth - margin)),
+    top: Math.max(margin, Math.min(clientY - panelHeight / 2, vh - panelHeight - margin)),
+  }
+}
+
 /** Keep a toolbar panel fully inside the overlay monitor (logical coordinates). */
 export function clampToolbarWindowPosition(
   left: number,

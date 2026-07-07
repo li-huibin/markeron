@@ -1,6 +1,7 @@
 import type { Ref, ComputedRef } from 'vue'
 import type { Tool } from './drawingTypes'
 import { isMacOS } from '../utils/platform'
+import { logActionEvent } from '../utils/diagnosticEvents'
 
 const TOOL_KEYS: Tool[] = ['pen', 'highlighter', 'arrow', 'rect', 'ellipse', 'line', 'eraser']
 
@@ -54,13 +55,17 @@ export function createKeyDownHandler(ctx: KeyboardContext, actions: KeyboardActi
         e.preventDefault()
         actions.copyScreen()
       } else if (e.key === 'Escape') {
+        logActionEvent('quick colors closed', { reason: 'keyboard' })
         ctx.showQuickColors.value = false
       } else if (e.key === 'q' || e.key === 'Q') {
+        logActionEvent('color cycled', { reason: 'keyboard', direction: -1, context: 'quick-colors' })
         actions.cycleColor(-1)
       } else if (e.key === 'e' || e.key === 'E') {
+        logActionEvent('color cycled', { reason: 'keyboard', direction: 1, context: 'quick-colors' })
         actions.cycleColor(1)
       } else if (e.key === ' ') {
         e.preventDefault()
+        logActionEvent('toolbar popup toggled', { reason: 'keyboard', context: 'quick-colors' })
         ctx.mousePos.value = { ...ctx.quickColorsPos.value }
         ctx.showQuickColors.value = false
         actions.toggleToolbarPopupVisible()
@@ -71,6 +76,7 @@ export function createKeyDownHandler(ctx: KeyboardContext, actions: KeyboardActi
     // Text box mode
     if (ctx.textBoxPos.value) {
       if (e.key === 'Escape') {
+        logActionEvent('text box cancelled', { reason: 'keyboard' })
         actions.commitCurrentTextBox(true)
       }
       return
@@ -80,6 +86,7 @@ export function createKeyDownHandler(ctx: KeyboardContext, actions: KeyboardActi
     if (e.key === ' ') {
       if (ctx.toolbarPinned.value) return
       e.preventDefault()
+      logActionEvent('toolbar popup toggled', { reason: 'keyboard' })
       ctx.mousePos.value = { x: ctx.lastPointerX(), y: ctx.lastPointerY() }
       actions.toggleToolbarPopupVisible()
       return
@@ -87,16 +94,19 @@ export function createKeyDownHandler(ctx: KeyboardContext, actions: KeyboardActi
 
     // Color cycling
     if (e.key === 'q' || e.key === 'Q') {
+      logActionEvent('color cycled', { reason: 'keyboard', direction: -1 })
       actions.cycleColor(-1)
       return
     }
     if (e.key === 'e' || e.key === 'E') {
+      logActionEvent('color cycled', { reason: 'keyboard', direction: 1 })
       actions.cycleColor(1)
       return
     }
 
     // Text tool
     if (e.key === 't' || e.key === 'T') {
+      logActionEvent('tool selected', { reason: 'keyboard', tool: 'text' })
       ctx.currentTool.value = 'text'
       actions.showToolTip('text')
       return
@@ -105,6 +115,7 @@ export function createKeyDownHandler(ctx: KeyboardContext, actions: KeyboardActi
     // Tool switching (1-7)
     if (e.key >= '1' && e.key <= '7') {
       const tool = TOOL_KEYS[parseInt(e.key) - 1]
+      logActionEvent('tool selected', { reason: 'keyboard', tool, key: e.key })
       ctx.currentTool.value = tool
       actions.showToolTip(tool)
       return
@@ -113,8 +124,10 @@ export function createKeyDownHandler(ctx: KeyboardContext, actions: KeyboardActi
     // Whiteboard mode toggle
     if (e.key === 'w' || e.key === 'W') {
       if (ctx.whiteboardMode.value) {
+        logActionEvent('whiteboard exit requested', { reason: 'keyboard' })
         actions.exitWhiteboardMode()
       } else {
+        logActionEvent('whiteboard enter requested', { reason: 'keyboard' })
         actions.enterWhiteboardMode()
       }
       return
@@ -123,6 +136,7 @@ export function createKeyDownHandler(ctx: KeyboardContext, actions: KeyboardActi
     // Click-through (penetration) mode toggle — X (pairs with Ctrl+Shift+X); not in whiteboard
     if ((e.key === 'x' || e.key === 'X') && !modDown(e)) {
       if (ctx.whiteboardMode.value) return
+      logActionEvent('toggle penetration requested', { reason: 'keyboard' })
       actions.togglePenetrationMode()
       return
     }
@@ -144,19 +158,25 @@ export function createKeyDownHandler(ctx: KeyboardContext, actions: KeyboardActi
     // Undo/Redo/Clear/Exit
     if (modDown(e) && e.shiftKey && e.key === 'Z') {
       e.preventDefault()
+      logActionEvent('redo', { reason: 'keyboard', shortcut: 'mod+shift+z' })
       actions.redo()
     } else if (modDown(e) && e.key === 'z') {
       e.preventDefault()
+      logActionEvent('undo', { reason: 'keyboard', shortcut: 'mod+z' })
       actions.undo()
     } else if (modDown(e) && e.key === 'y') {
       e.preventDefault()
+      logActionEvent('redo', { reason: 'keyboard', shortcut: 'mod+y' })
       actions.redo()
     } else if (e.key === 'Delete') {
+      logActionEvent('canvas cleared', { reason: 'keyboard', shortcut: 'delete' })
       actions.clearAll()
     } else if (e.key === 'Escape') {
       if (ctx.whiteboardMode.value) {
+        logActionEvent('whiteboard exit requested', { reason: 'keyboard', shortcut: 'escape' })
         actions.exitWhiteboardMode()
       } else {
+        logActionEvent('exit drawing requested', { reason: 'keyboard', shortcut: 'escape' })
         actions.exitDrawing()
       }
     }

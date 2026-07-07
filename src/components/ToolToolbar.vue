@@ -157,9 +157,11 @@ function emitPanelHover(hovering: boolean) {
 
 function probePanelHoverAtScreen(screenX: number, screenY: number) {
   if (!props.standaloneWindow || !panelRef.value || !positioned.value) return
-  // macOS standalone: screen-space probe disagrees with pointer enter/leave and keeps
-  // toolbarPanelHovered true on the overlay — rely on DOM boundary events instead.
-  if (isMacOS()) return
+  // Standalone toolbar: screen-space probe disagrees with pointer enter/leave on
+  // multi-monitor / mixed-DPI setups and spuriously hides the overlay pen cursor.
+  // Hover is driven by pointer enter/leave on the panel; the overlay clears stale
+  // hover when the pointer moves on the canvas (see DrawingOverlay).
+  if (props.standaloneWindow) return
   const r = panelRef.value.getBoundingClientRect()
   const origin = getToolbarWindowScreenOrigin()
   emitPanelHover(isPointerOverPanelRect(screenX, screenY, origin.x, origin.y, r))

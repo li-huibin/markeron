@@ -111,7 +111,13 @@ onMounted(async () => {
   window.addEventListener('keydown', onToolbarKeyDown)
 
   try {
-    await restoreToolbarWindowPosition()
+    const cfg = await invoke<AppConfig>('get_config')
+    toolbarVisibility.value = resolveToolbarVisibility(cfg.general)
+    // Space-triggered popup positions the window at the cursor; only restore saved
+    // placement when the toolbar is pinned always-on.
+    if (isToolbarPinned(toolbarVisibility.value)) {
+      await restoreToolbarWindowPosition()
+    }
     if (isMacOS()) {
       await refreshToolbarWindowScreenOrigin()
       const toolbarWindow = getCurrentWindow()
@@ -126,18 +132,17 @@ onMounted(async () => {
         }),
       )
     }
-  } catch (error) {
-    console.error('Failed to restore toolbar window position:', error)
-  }
-
-  try {
-    const cfg = await invoke<AppConfig>('get_config')
-    toolbarVisibility.value = resolveToolbarVisibility(cfg.general)
     await nextTick()
     void toolToolbarRef.value?.syncStandaloneWindowSize?.()
   } catch (error) {
     console.error('Failed to load toolbar config:', error)
   }
+
+  unlisteners.push(
+    await listen('toolbar-window-positioned', () => {
+      void toolToolbarRef.value?.syncStandaloneWindowSize?.()
+    }),
+  )
 
   unlisteners.push(
     await listen<OverlayStateSync>(OVERLAY_STATE_EVENT, (event) => {

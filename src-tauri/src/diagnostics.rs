@@ -96,6 +96,29 @@ pub fn append_event(state: &AppState, event: DiagnosticEvent) {
     }
 }
 
+pub fn log_backend_event(
+    state: &AppState,
+    category: &str,
+    message: &str,
+    detail: Option<Value>,
+    level: &str,
+) {
+    let ts = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0);
+    append_event(
+        state,
+        DiagnosticEvent {
+            ts,
+            level: level.to_string(),
+            category: category.to_string(),
+            message: message.to_string(),
+            detail,
+        },
+    );
+}
+
 pub fn snapshot_events(state: &AppState) -> Vec<DiagnosticEvent> {
     lock_or_recover(&state.diagnostic_events).clone()
 }

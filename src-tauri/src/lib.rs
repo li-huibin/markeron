@@ -23,6 +23,7 @@ use tauri::{
 use tracing::{info, warn};
 
 use config::{lock_or_recover, AppConfig, AppState};
+use diagnostics::log_backend_event;
 pub use overlay::{
     activate_drawing, clear_drawing, deactivate_drawing, enter_penetration_mode,
     exit_penetration_mode, raise_toolbar_above_overlay, set_toolbar_window_visible,
@@ -174,6 +175,14 @@ pub fn run() {
                         ..
                     } = event
                     {
+                        let state = handle_click.state::<AppState>();
+                        log_backend_event(
+                            &state,
+                            "session",
+                            "toggle drawing requested",
+                            Some(serde_json::json!({ "reason": "tray" })),
+                            "info",
+                        );
                         toggle_drawing(&handle_click);
                     }
                 });

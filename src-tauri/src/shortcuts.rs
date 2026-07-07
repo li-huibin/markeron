@@ -3,6 +3,7 @@ use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut};
 use tracing::{info, warn};
 
 use crate::config::{lock_or_recover, AppState};
+use crate::diagnostics::log_backend_event;
 
 pub fn parse_shortcut(accel: &str) -> Option<Shortcut> {
     accel.parse::<Shortcut>().ok()
@@ -66,6 +67,14 @@ pub fn register_shortcuts(app: &AppHandle) {
             app.global_shortcut()
                 .on_shortcut(shortcut, move |_app, _shortcut, event| {
                     if event.state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
+                        let state = h.state::<AppState>();
+                        log_backend_event(
+                            &state,
+                            "session",
+                            "toggle drawing requested",
+                            Some(serde_json::json!({ "reason": "global-shortcut" })),
+                            "info",
+                        );
                         crate::toggle_drawing(&h);
                     }
                 })
@@ -85,6 +94,13 @@ pub fn register_shortcuts(app: &AppHandle) {
             .on_shortcut(shortcut, move |app, _shortcut, event| {
                 if event.state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
                     let state = app.state::<crate::config::AppState>();
+                    log_backend_event(
+                        &state,
+                        "action",
+                        "canvas cleared",
+                        Some(serde_json::json!({ "reason": "global-shortcut" })),
+                        "info",
+                    );
                     crate::clear_drawing(app, &state);
                 }
             })
@@ -99,6 +115,13 @@ pub fn register_shortcuts(app: &AppHandle) {
             .on_shortcut(shortcut, move |app, _shortcut, event| {
                 if event.state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
                     let state = app.state::<crate::config::AppState>();
+                    log_backend_event(
+                        &state,
+                        "action",
+                        "toggle penetration requested",
+                        Some(serde_json::json!({ "reason": "global-shortcut" })),
+                        "info",
+                    );
                     crate::toggle_penetration_mode(app, &state);
                 }
             })

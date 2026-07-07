@@ -1,5 +1,36 @@
 import { describe, expect, it } from 'vitest'
-import { clampToolbarWindowPosition, migratePhysicalToLogical } from './toolbarPosition'
+import {
+  clampToolbarWindowPosition,
+  migratePhysicalToLogical,
+  overlayClientToScreenLogical,
+  toolbarPopupScreenPosition,
+} from './toolbarPosition'
+
+describe('overlayClientToScreenLogical', () => {
+  it('adds monitor origin to overlay client coords (multi-monitor above primary)', () => {
+    const monitor = { left: -283.3333333333333, top: -1440, width: 2560, height: 1440 }
+    expect(overlayClientToScreenLogical(1310, 494, monitor)).toEqual({
+      x: 1026.6666666666667,
+      y: -946,
+    })
+  })
+})
+
+describe('toolbarPopupScreenPosition', () => {
+  it('centers popup on pointer in screen logical space', () => {
+    const monitor = { left: -283.3333333333333, top: -1440, width: 2560, height: 1440 }
+    const pos = toolbarPopupScreenPosition(1310, 494, 272, 500, monitor)
+    expect(pos.left).toBeCloseTo(890.6666666666667, 4)
+    expect(pos.top).toBe(-1196)
+  })
+
+  it('falls back to viewport clamping when monitor bounds are unknown', () => {
+    expect(toolbarPopupScreenPosition(400, 300, 272, 500, null, { width: 1920, height: 1080 })).toEqual({
+      left: 264,
+      top: 50,
+    })
+  })
+})
 
 describe('clampToolbarWindowPosition', () => {
   const monitor = { left: 0, top: 0, width: 1920, height: 1080 }

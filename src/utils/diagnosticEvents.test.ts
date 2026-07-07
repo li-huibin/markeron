@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { clearDiagnosticEvents, getDiagnosticEventCount, getDiagnosticEvents, logDiagnostic } from './diagnosticEvents'
+import {
+  clearDiagnosticEvents,
+  getDiagnosticEventCount,
+  getDiagnosticEvents,
+  logActionEvent,
+  logDiagnostic,
+  logSessionEvent,
+} from './diagnosticEvents'
 
 describe('diagnosticEvents', () => {
   beforeEach(() => {
@@ -10,6 +17,16 @@ describe('diagnosticEvents', () => {
     logDiagnostic('copy', 'copyScreen invoked', { reason: 'keyboard' })
     expect(getDiagnosticEventCount()).toBe(1)
     expect(getDiagnosticEvents()[0]?.category).toBe('copy')
+  })
+
+  it('logSessionEvent uses session category', () => {
+    logSessionEvent('overlay mode changed', { from: 'hidden', to: 'drawing' })
+    expect(getDiagnosticEvents()[0]?.category).toBe('session')
+  })
+
+  it('logActionEvent uses action category', () => {
+    logActionEvent('undo', { reason: 'keyboard' })
+    expect(getDiagnosticEvents()[0]?.category).toBe('action')
   })
 
   it('trims buffer to max size', () => {

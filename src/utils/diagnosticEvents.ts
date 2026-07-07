@@ -41,3 +41,28 @@ export function getDiagnosticEventCount(): number {
 export function clearDiagnosticEvents(): void {
   events.length = 0
 }
+
+export type DiagnosticReason =
+  | 'keyboard'
+  | 'toolbar'
+  | 'global-shortcut'
+  | 'tray'
+  | 'focus-loss'
+  | 'activate'
+  | 'unknown'
+
+export function logSessionEvent(
+  message: string,
+  detail?: Record<string, unknown>,
+  level: DiagnosticLevel = 'info',
+): void {
+  logDiagnostic('session', message, detail, level)
+}
+
+export function logActionEvent(
+  message: string,
+  detail?: Record<string, unknown>,
+  level: DiagnosticLevel = 'info',
+): void {
+  logDiagnostic('action', message, detail, level)
+}

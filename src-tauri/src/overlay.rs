@@ -2,6 +2,7 @@ use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
 use tracing::{info, warn};
 
 use crate::config::{lock_or_recover, AppState, ToolbarVisibility};
+use crate::diagnostics::log_backend_event;
 use crate::monitor;
 use std::time::{Duration, Instant};
 
@@ -274,19 +275,75 @@ pub fn position_toolbar_at(app: &AppHandle, x: f64, y: f64) {
     let Some(window) = app.get_webview_window("toolbar") else {
         return;
     };
-    let (x, y) = if let Some(bounds) = monitor::get_overlay_monitor_logical_bounds(app) {
+    let bounds = monitor::get_overlay_monitor_logical_bounds(app);
+    let requested_x = x;
+    let requested_y = y;
+    let (x, y) = if let Some(ref bounds) = bounds {
         monitor::clamp_logical_position_to_monitor(
             x,
             y,
             TOOLBAR_PANEL_WIDTH,
             TOOLBAR_PANEL_HEIGHT,
-            &bounds,
+            bounds,
             TOOLBAR_EDGE_MARGIN,
         )
     } else {
         (x, y)
     };
-    window.set_position(tauri::LogicalPosition::new(x, y)).ok();
+    let state = app.state::<crate::config::AppState>();
+    let overlay_scale = app
+        .get_webview_window("overlay")
+        .and_then(|w| w.scale_factor().ok())
+        .unwrap_or(1.0);
+
+    log_backend_event(
+        &state,
+        "ui",
+        "toolbar popup positioned",
+        Some(serde_json::json!({
+            "requested": { "x": requested_x, "y": requested_y },
+            "clamped": { "x": x, "y": y },
+            "monitorBounds": bounds,
+            "overlayScale": overlay_scale,
+        })),
+        "info",
+    );
+
+    #[cfg(windows)]
+    {
+        let phys_x = (x * overlay_scale).round() as i32;
+        let phys_y = (y * overlay_scale).round() as i32;
+        let phys_w = (TOOLBAR_PANEL_WIDTH * overlay_scale).round() as u32;
+        let phys_h = (TOOLBAR_PANEL_HEIGHT * overlay_scale).round() as u32;
+        if let Ok(hwnd) = window.hwnd() {
+            crate::win32::position_window_on_monitor(
+                hwnd.0 as isize,
+                phys_x,
+                phys_y,
+                phys_w.max(1),
+                phys_h.max(96),
+            );
+        } else {
+            window
+                .set_position(tauri::PhysicalPosition::new(phys_x, phys_y))
+                .ok();
+            window
+                .set_size(tauri::PhysicalSize::new(
+                    phys_w.max(1),
+                    phys_h.saturating_sub(1).max(1),
+                ))
+                .ok();
+        }
+        if let Err(e) = app.emit("toolbar-window-positioned", ()) {
+            warn!("Failed to emit toolbar-window-positioned: {}", e);
+        }
+    }
+
+    #[cfg(not(windows))]
+    {
+        window.set_position(tauri::LogicalPosition::new(x, y)).ok();
+    }
+
     raise_toolbar_above_overlay(app);
 }
 
@@ -503,6 +560,13 @@ pub fn on_overlay_focus_lost(app: &AppHandle, state: &AppState) {
             if should_suppress_penetration(&state) || is_toolbar_focused(&app_for_thread) {
                 return;
             }
+            log_backend_event(
+                &state,
+                "action",
+                "toggle penetration requested",
+                Some(serde_json::json!({ "reason": "focus-loss" })),
+                "info",
+            );
             enter_penetration_mode(&app_for_thread, &state);
         });
     });
