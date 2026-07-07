@@ -53,12 +53,22 @@ fn open_settings(app: &AppHandle) {
     open_settings_tab(app, None);
 }
 
+fn focus_settings_window(app: &AppHandle, tab: Option<&str>) {
+    let Some(win) = app.get_webview_window("settings") else {
+        return;
+    };
+    #[cfg(target_os = "macos")]
+    macos::activate_for_settings(app);
+    win.show().ok();
+    win.set_focus().ok();
+    if let Some(t) = tab {
+        app.emit_to("settings", "switch-tab", t).ok();
+    }
+}
+
 fn open_settings_tab(app: &AppHandle, tab: Option<&str>) {
-    if let Some(win) = app.get_webview_window("settings") {
-        win.set_focus().ok();
-        if let Some(t) = tab {
-            app.emit("switch-tab", t).ok();
-        }
+    if app.get_webview_window("settings").is_some() {
+        focus_settings_window(app, tab);
         return;
     }
 
@@ -80,7 +90,10 @@ fn open_settings_tab(app: &AppHandle, tab: Option<&str>) {
 
     match builder.build() {
         #[cfg(target_os = "macos")]
-        Ok(window) => macos::configure_settings_window(&window),
+        Ok(window) => {
+            macos::activate_for_settings(app);
+            macos::configure_settings_window(&window);
+        }
         #[cfg(not(target_os = "macos"))]
         Ok(_) => {}
         Err(e) => warn!("Failed to open settings window: {}", e),
@@ -90,9 +103,7 @@ fn open_settings_tab(app: &AppHandle, tab: Option<&str>) {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
-            if let Some(win) = app.get_webview_window("settings") {
-                win.set_focus().ok();
-            }
+            focus_settings_window(app, None);
         }))
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
@@ -210,6 +221,10 @@ pub fn run() {
                 let app = window.app_handle();
                 let state = app.state::<AppState>();
                 overlay::on_overlay_focus_lost(app, &state);
+            }
+            tauri::WindowEvent::Destroyed if window.label() == "settings" => {
+                #[cfg(target_os = "macos")]
+                macos::restore_accessory_policy(window.app_handle());
             }
             _ => {}
         })

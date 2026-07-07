@@ -1,7 +1,16 @@
 use tauri::window::Color;
-use tauri::{AppHandle, Manager, Theme, TitleBarStyle, WebviewWindow};
+use tauri::{ActivationPolicy, AppHandle, Manager, Theme, TitleBarStyle, WebviewWindow};
 
 const SETTINGS_BG: Color = Color(30, 30, 32, 255);
+
+/// Tray apps run as Accessory; a Regular policy is required to surface the settings window.
+pub fn activate_for_settings(app: &AppHandle) {
+    app.set_activation_policy(ActivationPolicy::Regular).ok();
+}
+
+pub fn restore_accessory_policy(app: &AppHandle) {
+    app.set_activation_policy(ActivationPolicy::Accessory).ok();
+}
 
 pub fn style_settings_builder(
     builder: tauri::WebviewWindowBuilder<'_, tauri::Wry, AppHandle>,
