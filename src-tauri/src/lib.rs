@@ -66,6 +66,11 @@ fn focus_settings_window(app: &AppHandle, tab: Option<&str>) {
     }
 }
 
+/// Called from the settings webview after it mounts (window starts hidden to avoid white flash).
+pub fn reveal_settings_window(app: &AppHandle) {
+    focus_settings_window(app, None);
+}
+
 fn open_settings_tab(app: &AppHandle, tab: Option<&str>) {
     if app.get_webview_window("settings").is_some() {
         focus_settings_window(app, tab);
@@ -140,6 +145,7 @@ pub fn run() {
             commands::raise_toolbar,
             commands::set_whiteboard_mode,
             commands::open_url,
+            commands::reveal_settings_window,
             diagnostics::export_diagnostics,
             diagnostics::open_github_issue_report,
             diagnostics::append_diagnostic_event,

@@ -230,6 +230,11 @@ pub fn raise_toolbar(app: AppHandle) {
 const ALLOWED_URL_PREFIXES: &[&str] = &["https://github.com/", "https://apps.microsoft.com/"];
 
 #[tauri::command]
+pub fn reveal_settings_window(app: AppHandle) {
+    crate::reveal_settings_window(&app);
+}
+
+#[tauri::command]
 pub fn open_url(app: AppHandle, url: String) -> AppResult<()> {
     if !ALLOWED_URL_PREFIXES
         .iter()
