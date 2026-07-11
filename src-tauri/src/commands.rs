@@ -248,10 +248,15 @@ pub fn pin_screenshot(app: AppHandle, image: String) -> AppResult<()> {
         overlay.show().ok();
         overlay.set_always_on_top(true).ok();
         overlay.set_ignore_cursor_events(true).ok();
-    }
 
-    app.emit("pin-image", serde_json::json!({ "image": image }))
-        .map_err(|e| AppError::Other(e.to_string()))?;
+        // Emit to the overlay window specifically so PinnedImages component receives it
+        app.emit_to("overlay", "pin-image", serde_json::json!({ "image": image }))
+            .map_err(|e| AppError::Other(e.to_string()))?;
+    } else {
+        // Fallback to global emit if overlay window not found
+        app.emit("pin-image", serde_json::json!({ "image": image }))
+            .map_err(|e| AppError::Other(e.to_string()))?;
+    }
     Ok(())
 }
 
