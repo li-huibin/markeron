@@ -1200,6 +1200,9 @@ async function handleToolbarAction(action: ToolbarAction) {
     case 'exitDrawing':
       exitDrawing('toolbar')
       break
+    case 'screenshot':
+      await invoke('toggle_screenshot')
+      break
   }
   syncOverlayStateToToolbar()
 }

@@ -136,6 +136,7 @@ export default {
     whiteboard: '白板',
     exitWhiteboard: '退出白板',
     copy: '复制',
+    screenshot: '区域截图',
     drawingMode: '绘制模式',
     penetrationMode: '穿透模式',
     pin: '固定工具栏',

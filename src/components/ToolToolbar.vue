@@ -1,6 +1,18 @@
 <script setup lang="ts">
 import { ref, nextTick, onMounted, onUnmounted, computed, watch } from 'vue'
-import { Undo2, Redo2, Trash2, Layout, Copy, MoreHorizontal, ChevronUp, MousePointer2, Pin, X } from '@lucide/vue'
+import {
+  Undo2,
+  Redo2,
+  Trash2,
+  Layout,
+  Copy,
+  MoreHorizontal,
+  ChevronUp,
+  MousePointer2,
+  Pin,
+  X,
+  Camera,
+} from '@lucide/vue'
 import type { Tool } from '../composables/useDrawing'
 import { isMacOS } from '../utils/platform'
 import { useI18n } from '../i18n'
@@ -58,6 +70,7 @@ const emit = defineEmits<{
   togglePenetration: []
   togglePin: []
   exitDrawing: []
+  screenshot: []
   panelHover: [hovering: boolean]
   panelDrag: [dragging: boolean]
 }>()
@@ -539,6 +552,15 @@ onUnmounted(() => {
             @click="emit('copy')"
           >
             <Copy :size="15" />
+          </button>
+          <button
+            type="button"
+            class="overlay-toolbar-action"
+            :title="t('toolbar.screenshot')"
+            :aria-label="t('toolbar.screenshot')"
+            @click="emit('screenshot')"
+          >
+            <Camera :size="15" />
           </button>
           <button
             v-if="standaloneWindow"

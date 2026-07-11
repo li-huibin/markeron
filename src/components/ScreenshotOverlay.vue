@@ -2,7 +2,6 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { getCurrentWindow, LogicalSize, LogicalPosition } from '@tauri-apps/api/window'
-import { emit } from '@tauri-apps/api/event'
 import { useI18n } from '../i18n'
 
 const { t } = useI18n()
@@ -30,6 +29,25 @@ const showResultMenu = ref(false)
 const resultMenuX = ref(0)
 const resultMenuY = ref(0)
 const capturedImage = ref<string | null>(null)
+
+function resetSelection() {
+  isSelecting.value = false
+  startX.value = 0
+  startY.value = 0
+  currentX.value = 0
+  currentY.value = 0
+  showResultMenu.value = false
+  capturedImage.value = null
+
+  const canvas = canvasRef.value
+  const container = containerRef.value
+  if (canvas && container) {
+    const ctx = canvas.getContext('2d')
+    if (ctx) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+    }
+  }
+}
 
 function resizeCanvas() {
   const canvas = canvasRef.value
@@ -147,7 +165,7 @@ function handleKeyDown(e: KeyboardEvent) {
 async function onPinImage() {
   if (!capturedImage.value) return
 
-  emit('pin-image', { image: capturedImage.value })
+  await invoke('pin_screenshot', { image: capturedImage.value })
   showResultMenu.value = false
   await tauriWindow.hide()
 }
@@ -158,6 +176,7 @@ async function onCancel() {
 }
 
 onMounted(async () => {
+  resetSelection()
   resizeCanvas()
 
   window.addEventListener('resize', resizeCanvas)
@@ -177,7 +196,7 @@ onUnmounted(() => {
 <template>
   <div
     ref="containerRef"
-    class="fixed inset-0 w-screen h-screen bg-transparent overflow-hidden"
+    class="fixed inset-0 w-screen h-screen bg-transparent overflow-hidden screenshot-cursor"
     @pointerdown="handlePointerDown"
     @pointermove="handlePointerMove"
     @pointerup="handlePointerUp"
@@ -241,3 +260,9 @@ onUnmounted(() => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.screenshot-cursor {
+  cursor: crosshair;
+}
+</style>

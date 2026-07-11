@@ -177,6 +177,7 @@ pub fn run() {
             clipboard::copy_screen,
             clipboard::copy_whiteboard,
             clipboard::capture_region,
+            commands::toggle_screenshot,
             commands::pin_screenshot,
         ])
         .setup(|app| {

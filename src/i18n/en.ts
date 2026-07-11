@@ -139,6 +139,7 @@ export default {
     whiteboard: 'Whiteboard',
     exitWhiteboard: 'Exit whiteboard',
     copy: 'Copy',
+    screenshot: 'Screenshot',
     drawingMode: 'Drawing mode',
     penetrationMode: 'Click-through mode',
     pin: 'Pin toolbar',

@@ -41,6 +41,7 @@ export type ToolbarAction =
   | { type: 'togglePenetration' }
   | { type: 'togglePin' }
   | { type: 'exitDrawing' }
+  | { type: 'screenshot' }
 
 export function emitToolbarAction(action: ToolbarAction): void {
   void import('@tauri-apps/api/event').then(({ emit }) => emit(TOOLBAR_ACTION_EVENT, action))

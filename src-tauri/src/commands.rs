@@ -237,7 +237,19 @@ pub fn reveal_settings_window(app: AppHandle) {
 }
 
 #[tauri::command]
+pub fn toggle_screenshot(app: AppHandle) {
+    crate::toggle_screenshot(&app);
+}
+
+#[tauri::command]
 pub fn pin_screenshot(app: AppHandle, image: String) -> AppResult<()> {
+    // Ensure the overlay window is visible and on top so pinned images are shown
+    if let Some(overlay) = app.get_webview_window("overlay") {
+        overlay.show().ok();
+        overlay.set_always_on_top(true).ok();
+        overlay.set_ignore_cursor_events(true).ok();
+    }
+
     app.emit("pin-image", serde_json::json!({ "image": image }))
         .map_err(|e| AppError::Other(e.to_string()))?;
     Ok(())

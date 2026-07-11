@@ -217,6 +217,7 @@ onUnmounted(() => {
       @toggle-penetration="onTogglePenetration"
       @toggle-pin="emitToolbarAction({ type: 'togglePin' })"
       @exit-drawing="emitToolbarAction({ type: 'exitDrawing' })"
+      @screenshot="emitToolbarAction({ type: 'screenshot' })"
       @close="onToolbarClose"
       @panel-hover="onPanelHover"
       @panel-drag="onPanelDrag"
