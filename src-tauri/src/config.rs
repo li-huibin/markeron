@@ -246,6 +246,8 @@ pub struct AppState {
     /// Pinned screenshots waiting to be picked up by the overlay window's PinnedImages component.
     /// Used as a fallback when emit_to("overlay") fails because the webview hasn't loaded yet.
     pub pending_pinned_images: Mutex<Vec<String>>,
+    /// Image data keyed by pinned-image window id, so each window can look up its own image.
+    pub pinned_image_store: Mutex<std::collections::HashMap<u32, String>>,
 }
 
 /// Lock a mutex with poison recovery — if a thread panicked while holding

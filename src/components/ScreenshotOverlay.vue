@@ -166,7 +166,7 @@ function handleKeyDown(e: KeyboardEvent) {
 async function onPinImage() {
   if (!capturedImage.value) return
 
-  await invoke('pin_screenshot', { image: capturedImage.value })
+  await invoke('open_pinned_image_window', { image: capturedImage.value })
   showResultMenu.value = false
   await tauriWindow.hide()
 }

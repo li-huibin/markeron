@@ -277,6 +277,51 @@ pub fn take_pending_pinned_images(state: tauri::State<'_, AppState>) -> Vec<Stri
     std::mem::take(&mut *pending)
 }
 
+/// Open a dedicated floating window for a pinned screenshot.
+/// Each pinned image gets its own topmost window that can be dragged and closed.
+#[tauri::command]
+pub fn open_pinned_image_window(app: AppHandle, image: String) -> AppResult<()> {
+    use std::sync::atomic::{AtomicU32, Ordering};
+
+    static PIN_COUNTER: AtomicU32 = AtomicU32::new(0);
+    let id = PIN_COUNTER.fetch_add(1, Ordering::SeqCst);
+    let label = format!("pin-{}", id);
+
+    let initial_w = 400.0;
+    let initial_h = 300.0;
+    let offset = (id % 10) as f64 * 24.0;
+
+    let url = tauri::WebviewUrl::App(format!("index.html#pinned-image/{}", id).into());
+
+    let builder = tauri::WebviewWindowBuilder::new(&app, &label, url)
+        .title("Pinned Image")
+        .decorations(false)
+        .transparent(true)
+        .always_on_top(true)
+        .resizable(true)
+        .skip_taskbar(true)
+        .inner_size(initial_w, initial_h)
+        .shadow(false);
+
+    let win = builder
+        .build()
+        .map_err(|e| AppError::Other(format!("Failed to create pinned image window: {}", e)))?;
+
+    let _ = win.set_position(tauri::LogicalPosition::new(100.0 + offset, 100.0 + offset));
+
+    // Store image data keyed by id for the new window to fetch.
+    let state = app.state::<AppState>();
+    lock_or_recover(&state.pinned_image_store).insert(id, image);
+
+    Ok(())
+}
+
+/// Fetch a pinned image by its window id. Removes the entry after retrieval.
+#[tauri::command]
+pub fn take_pinned_image(state: tauri::State<'_, AppState>, id: u32) -> Option<String> {
+    lock_or_recover(&state.pinned_image_store).remove(&id)
+}
+
 #[tauri::command]
 pub fn open_url(app: AppHandle, url: String) -> AppResult<()> {
     if !ALLOWED_URL_PREFIXES

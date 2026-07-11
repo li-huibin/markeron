@@ -151,6 +151,7 @@ pub fn run() {
             whiteboard_mode: Mutex::new(false),
             diagnostic_events: Mutex::new(Vec::new()),
             pending_pinned_images: Mutex::new(Vec::new()),
+            pinned_image_store: Mutex::new(std::collections::HashMap::new()),
         })
         .invoke_handler(tauri::generate_handler![
             commands::get_config,
@@ -181,6 +182,8 @@ pub fn run() {
             commands::toggle_screenshot,
             commands::pin_screenshot,
             commands::take_pending_pinned_images,
+            commands::open_pinned_image_window,
+            commands::take_pinned_image,
         ])
         .setup(|app| {
             let handle = app.handle().clone();
