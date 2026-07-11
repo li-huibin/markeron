@@ -3,6 +3,12 @@ name: Release
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build'
+        required: false
+        default: 'v1.4.0'
 
 jobs:
   release-notes:
@@ -11,10 +17,21 @@ jobs:
       contents: write
     outputs:
       body: ${{ steps.notes.outputs.result }}
+      tag: ${{ steps.tag.outputs.result }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - id: tag
+        uses: actions/github-script@v7
+        with:
+          result-encoding: string
+          script: |
+            if (context.eventName === 'workflow_dispatch') {
+              return context.payload.inputs?.tag || 'v1.4.0';
+            }
+            return context.ref.replace('refs/tags/', '');
 
       - id: notes
         uses: actions/github-script@v7
@@ -22,7 +39,7 @@ jobs:
           result-encoding: string
           script: |
             const { execSync } = require('child_process');
-            const tag = context.ref.replace('refs/tags/', '');
+            const tag = "${{ steps.tag.outputs.result }}";
 
             const headingMap = new Map([
               ["What's Changed", "What's New"],
@@ -216,8 +233,8 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: 'MarkerOnPlus ${{ github.ref_name }}'
+          tagName: ${{ needs.release-notes.outputs.tag }}
+          releaseName: 'MarkerOnPlus ${{ needs.release-notes.outputs.tag }}'
           releaseBody: ${{ needs.release-notes.outputs.body }}
           releaseDraft: true
           prerelease: false
@@ -255,10 +272,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           MSIX=$(ls src-tauri/target/release/bundle/msix/*.msix)
-          gh release upload "${{ github.ref_name }}" "$MSIX" --clobber
+          gh release upload "${{ needs.release-notes.outputs.tag }}" "$MSIX" --clobber
 
   publish-release:
-    needs: build
+    needs: [build, release-notes]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -278,4 +295,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
-        run: node scripts/consolidate-github-release.mjs "${{ github.ref_name }}" merged-latest.json
+        run: node scripts/consolidate-github-release.mjs "${{ needs.release-notes.outputs.tag }}" merged-latest.json
