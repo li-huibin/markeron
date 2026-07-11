@@ -3,12 +3,7 @@ use std::borrow::Cow;
 use base64::Engine;
 
 #[tauri::command]
-pub fn capture_region(
-    x: i32,
-    y: i32,
-    width: i32,
-    height: i32,
-) -> Result<String, String> {
+pub fn capture_region(x: i32, y: i32, width: i32, height: i32) -> Result<String, String> {
     if width <= 0 || height <= 0 {
         return Err("Invalid region dimensions".to_string());
     }
@@ -93,7 +88,15 @@ pub fn capture_region(
             bmi.header.bi_planes = 1;
             bmi.header.bi_bit_count = 32;
 
-            let scan_lines = GetDIBits(hdc_mem, hbm, 0, height as u32, ptr.add(header_size), &mut bmi, 0);
+            let scan_lines = GetDIBits(
+                hdc_mem,
+                hbm,
+                0,
+                height as u32,
+                ptr.add(header_size),
+                &mut bmi,
+                0,
+            );
 
             if scan_lines == 0 {
                 SelectObject(hdc_mem, old_obj);
@@ -110,15 +113,20 @@ pub fn capture_region(
             DeleteDC(hdc_mem);
             ReleaseDC(0, hdc_screen);
 
-            let image: image::ImageBuffer<image::Rgba<u8>, Vec<u8>> = image::ImageBuffer::from_raw(width as u32, height as u32, buf[header_size..].to_vec())
-                .ok_or_else(|| "Failed to create image buffer".to_string())?;
-            
+            let image: image::ImageBuffer<image::Rgba<u8>, Vec<u8>> = image::ImageBuffer::from_raw(
+                width as u32,
+                height as u32,
+                buf[header_size..].to_vec(),
+            )
+            .ok_or_else(|| "Failed to create image buffer".to_string())?;
+
             let mut cursor = std::io::Cursor::new(Vec::new());
-            image.write_to(&mut cursor, image::ImageFormat::Png)
+            image
+                .write_to(&mut cursor, image::ImageFormat::Png)
                 .map_err(|e| format!("Failed to encode PNG: {}", e))?;
             let png_data = cursor.into_inner();
             let base64 = base64::engine::general_purpose::STANDARD.encode(&png_data);
-            
+
             let mut cb = arboard::Clipboard::new().map_err(|e| format!("{}", e))?;
             cb.set_image(arboard::ImageData {
                 width: width as usize,
@@ -138,7 +146,7 @@ pub fn capture_region(
             .args(["-x", "-R", &region, "-"])
             .output()
             .map_err(|e| format!("screencapture failed: {}", e))?;
-        
+
         if !output.status.success() {
             return Err(format!(
                 "screencapture exited with code {:?}",
@@ -166,25 +174,37 @@ pub fn capture_region(
     {
         let monitors = std::panic::catch_unwind(xcap::Monitor::all)
             .map_err(|_| {
-                "Screen capture not supported: Wayland compositor lacks required protocol".to_string()
+                "Screen capture not supported: Wayland compositor lacks required protocol"
+                    .to_string()
             })?
             .map_err(|e| format!("{}", e))?;
         let monitor = monitors.first().ok_or("No monitor found")?;
-        
+
         let monitor_x = monitor.x().map_err(|e| format!("{}", e))?;
         let monitor_y = monitor.y().map_err(|e| format!("{}", e))?;
-        
-        if x < monitor_x || y < monitor_y || x + width > monitor_x + monitor.width().map_err(|e| format!("{}", e))? || y + height > monitor_y + monitor.height().map_err(|e| format!("{}", e))? {
+
+        if x < monitor_x
+            || y < monitor_y
+            || x + width > monitor_x + monitor.width().map_err(|e| format!("{}", e))?
+            || y + height > monitor_y + monitor.height().map_err(|e| format!("{}", e))?
+        {
             return Err("Region out of monitor bounds".to_string());
         }
 
-        let full_image = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| monitor.capture_image()))
-            .map_err(|_| "Screen capture failed: compositor protocol error".to_string())?
-            .map_err(|e| format!("{}", e))?;
+        let full_image =
+            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| monitor.capture_image()))
+                .map_err(|_| "Screen capture failed: compositor protocol error".to_string())?
+                .map_err(|e| format!("{}", e))?;
 
-        let cropped = image::imageops::crop(&mut full_image.clone(), (x - monitor_x) as u32, (y - monitor_y) as u32, width as u32, height as u32)
-            .to_image()
-            .to_rgba8();
+        let cropped = image::imageops::crop(
+            &mut full_image.clone(),
+            (x - monitor_x) as u32,
+            (y - monitor_y) as u32,
+            width as u32,
+            height as u32,
+        )
+        .to_image()
+        .to_rgba8();
 
         let mut cb = arboard::Clipboard::new().map_err(|e| format!("{}", e))?;
         cb.set_image(arboard::ImageData {
@@ -195,11 +215,12 @@ pub fn capture_region(
         .map_err(|e| format!("{}", e))?;
 
         let mut cursor = std::io::Cursor::new(Vec::new());
-        cropped.write_to(&mut cursor, image::ImageFormat::Png)
+        cropped
+            .write_to(&mut cursor, image::ImageFormat::Png)
             .map_err(|e| format!("Failed to encode PNG: {}", e))?;
         let png_data = cursor.into_inner();
         let base64 = base64::engine::general_purpose::STANDARD.encode(&png_data);
-        
+
         Ok(format!("data:image/png;base64,{}", base64))
     }
 }

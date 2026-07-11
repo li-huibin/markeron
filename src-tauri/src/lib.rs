@@ -246,7 +246,9 @@ pub fn run() {
         })
         .on_window_event(|window, event| match event {
             tauri::WindowEvent::CloseRequested { api, .. }
-                if window.label() == "overlay" || window.label() == "toolbar" || window.label() == "screenshot" =>
+                if window.label() == "overlay"
+                    || window.label() == "toolbar"
+                    || window.label() == "screenshot" =>
             {
                 api.prevent_close();
                 window.hide().ok();
