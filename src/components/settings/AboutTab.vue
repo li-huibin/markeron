@@ -31,7 +31,7 @@ async function openUrl(url: string) {
       </svg>
     </div>
 
-    <h1 class="text-[18px] font-semibold settings-text-heading tracking-wide mb-1">MarkerOn</h1>
+    <h1 class="text-[18px] font-semibold settings-text-heading tracking-wide mb-1">MarkerOnPlus</h1>
     <p class="text-[11.5px] settings-text-subtle mb-4">{{ t('about.tagline') }}</p>
 
     <!-- Update checker -->

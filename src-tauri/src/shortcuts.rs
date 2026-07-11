@@ -134,4 +134,30 @@ pub fn register_shortcuts(app: &AppHandle) {
             );
         }
     }
+
+    if let Some(shortcut) = parse_shortcut(&config.shortcuts.screenshot) {
+        if let Err(e) = app
+            .global_shortcut()
+            .on_shortcut(shortcut, move |app, _shortcut, event| {
+                if event.state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
+                    let state = app.state::<crate::config::AppState>();
+                    log_backend_event(
+                        &state,
+                        "action",
+                        "screenshot requested",
+                        Some(serde_json::json!({ "reason": "global-shortcut" })),
+                        "info",
+                    );
+                    crate::toggle_screenshot(app);
+                }
+            })
+        {
+            warn!("Failed to register screenshot shortcut: {}", e);
+        } else {
+            info!(
+                "Registered screenshot shortcut: {}",
+                config.shortcuts.screenshot
+            );
+        }
+    }
 }

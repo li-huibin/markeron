@@ -1,4 +1,10 @@
 export default {
+  screenshot: {
+    pin: '固定图片',
+    cancel: '取消',
+    pinned: '已固定',
+    noImages: '暂无固定图片',
+  },
   tools: {
     pen: '画笔',
     highlighter: '荧光笔',
@@ -79,6 +85,7 @@ export default {
       toggleDrawing: '开始标注',
       clearDrawing: '清除标注',
       togglePenetration: '切换穿透模式',
+      screenshot: '截图',
     },
     shortcutsSaved: '快捷键已保存',
     shortcutsConflict: '以下快捷键被占用：{keys}',
@@ -236,6 +243,6 @@ export default {
     help: '使用帮助',
     about: '关于',
     quit: '退出',
-    windowTitle: 'MarkerOn 设置',
+    windowTitle: 'MarkerOnPlus 设置',
   },
 }

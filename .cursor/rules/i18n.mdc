@@ -1,12 +1,12 @@
 ---
-description: MarkerOn i18n — sync en + zh-CN frontend strings; update Rust i18n.rs for tray/system UI.
+description: MarkerOnPlus i18n — sync en + zh-CN frontend strings; update Rust i18n.rs for tray/system UI.
 globs: src/i18n/**,src-tauri/src/i18n.rs,src/components/**/*.vue
 alwaysApply: false
 ---
 
 # Internationalization (i18n)
 
-MarkerOn has **two** string layers. Changing user-visible text may require both.
+MarkerOnPlus has **two** string layers. Changing user-visible text may require both.
 
 ## 1. Frontend (Vue UI)
 

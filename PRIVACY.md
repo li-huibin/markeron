@@ -2,13 +2,13 @@
 
 ## Introduction
 
-**MarkerOn** is a lightweight desktop screen annotation tool. We highly value your privacy, and this policy explains how we handle your data.
+**MarkerOnPlus** is a lightweight desktop screen annotation tool. We highly value your privacy, and this policy explains how we handle your data.
 
 ## Data Collection and Usage
 
 ### Information We Do **Not** Collect
 
-MarkerOn explicitly commits to:
+MarkerOnPlus explicitly commits to:
 
 * **Not** creating any unique identifiers, trackers, or similar tools
 * **Not** collecting usage statistics, performance metrics, or any user behavior information
@@ -18,7 +18,7 @@ MarkerOn explicitly commits to:
 
 ### Locally Stored Data
 
-MarkerOn only saves the following information locally:
+MarkerOnPlus only saves the following information locally:
 
 1. **Configuration Data**
    Includes shortcut key settings, general preferences (e.g., auto-start, drag enable), stored via the Tauri application data directory.
@@ -28,22 +28,22 @@ MarkerOn only saves the following information locally:
 
 ### Network Access Information
 
-MarkerOn does **not** access the internet for any reason. The application:
+MarkerOnPlus does **not** access the internet for any reason. The application:
 
 * Does **not** check for updates online
 * Does **not** send telemetry or crash reports
 * Does **not** connect to any remote servers
 
-MarkerOn is a fully offline application.
+MarkerOnPlus is a fully offline application.
 
 ## Data Protection and Deletion
 
-All data is stored locally, and MarkerOn does not perform any remote synchronization or uploads.
+All data is stored locally, and MarkerOnPlus does not perform any remote synchronization or uploads.
 To completely remove data, simply uninstall the application. Configuration files are removed along with the uninstallation.
 
 ## Permission Usage Information
 
-System permissions requested by MarkerOn are only used to implement core functions:
+System permissions requested by MarkerOnPlus are only used to implement core functions:
 
 * **Display Overlay**: For rendering the transparent full-screen annotation layer on top of other windows
 * **Global Shortcut Keys**: For toggling annotation mode and clearing drawings from any application

@@ -34,6 +34,20 @@ function sameSemver(a, b) {
   return a.major === b.major && a.minor === b.minor && a.patch === b.patch
 }
 
+function satisfiesNpm(required, current) {
+  const match = required.match(/^>=(\d+)\.(\d+)\.(\d+)/)
+  if (match) {
+    const reqMajor = +match[1]
+    const reqMinor = +match[2]
+    const reqPatch = +match[3]
+    if (current.major > reqMajor) return true
+    if (current.major === reqMajor && current.minor > reqMinor) return true
+    if (current.major === reqMajor && current.minor === reqMinor && current.patch >= reqPatch) return true
+    return false
+  }
+  return sameSemver(required, current)
+}
+
 const currentNode = parseNode(process.version)
 const requiredNodeSemver = parseSemver(requiredNode)
 
@@ -47,7 +61,7 @@ if (!currentNode || !requiredNodeSemver || !sameSemver(currentNode, requiredNode
   errors.push(`Node.js ${requiredNode} required (current: ${process.version})`)
 }
 
-if (!currentNpm || !requiredNpmSemver || !sameSemver(currentNpm, requiredNpmSemver)) {
+if (!currentNpm || !satisfiesNpm(requiredNpm, currentNpm)) {
   errors.push(`npm ${requiredNpm} required (current: ${npmResult.stdout?.trim() || 'unknown'})`)
 }
 

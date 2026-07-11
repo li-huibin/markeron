@@ -1,5 +1,5 @@
 ---
-description: Pinned Node.js and npm versions for MarkerOn development and CI.
+description: Pinned Node.js and npm versions for MarkerOnPlus development and CI.
 globs: package.json,.nvmrc,.node-version,.npmrc,.github/workflows/*.yml
 alwaysApply: false
 ---

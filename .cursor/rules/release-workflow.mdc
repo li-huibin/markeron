@@ -8,7 +8,7 @@ alwaysApply: false
 
 ## Mandatory command
 
-When releasing MarkerOn, **only** use:
+When releasing MarkerOnPlus, **only** use:
 
 ```bash
 npm run release patch   # bug fixes (most common)

@@ -1,4 +1,4 @@
-# Agent Guide — MarkerOn
+# Agent Guide — MarkerOnPlus
 
 Index for AI agents and contributors. Prefer these docs over guessing project conventions.
 
@@ -20,6 +20,7 @@ Human-oriented setup: [CONTRIBUTING.md](./CONTRIBUTING.md)
 | **Commit message / czg / hook failures** | [.cursor/rules/commit-conventions.mdc](./.cursor/rules/commit-conventions.mdc) |
 | **Vue/CSS, Mac vs Windows UI** | [.cursor/skills/cross-platform-tauri-ui/SKILL.md](./.cursor/skills/cross-platform-tauri-ui/SKILL.md) + [.cursor/rules/cross-platform-ui-styles.mdc](./.cursor/rules/cross-platform-ui-styles.mdc) |
 | **Translations (en + zh-CN)** | [.cursor/rules/i18n.mdc](./.cursor/rules/i18n.mdc) |
+| **Screenshot & pinned images** | 区域截图 + 图片固定功能 |
 | **Settings, config.json, IPC commands** | [.cursor/skills/tauri-config-ipc/SKILL.md](./.cursor/skills/tauri-config-ipc/SKILL.md) |
 | **Node / npm version pin** | [.cursor/rules/node-toolchain.mdc](./.cursor/rules/node-toolchain.mdc) |
 

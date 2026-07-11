@@ -4,16 +4,16 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#101114" />
-    <title>MarkerOn - Lightweight Screen Annotation Tool</title>
+    <title>MarkerOnPlus - Lightweight Screen Annotation Tool</title>
     <meta
       name="description"
-      content="MarkerOn is a lightweight open-source screen annotation tool with click-through mode, whiteboard mode, and keyboard-first drawing for Windows, macOS, and Linux."
+      content="MarkerOnPlus is a lightweight open-source screen annotation tool with click-through mode, whiteboard mode, and keyboard-first drawing for Windows, macOS, and Linux."
     />
     <meta
       name="keywords"
       content="screen annotation tool, ZoomIt alternative, Epic Pen alternative, desktop whiteboard, Tauri app, screen drawing"
     />
-    <meta property="og:title" content="MarkerOn - Lightweight Screen Annotation Tool" />
+    <meta property="og:title" content="MarkerOnPlus - Lightweight Screen Annotation Tool" />
     <meta
       property="og:description"
       content="Draw, highlight, and annotate anywhere on your desktop. Click-through mode keeps annotations visible while you interact with apps below."
@@ -25,7 +25,7 @@
     <link rel="stylesheet" href="styles.css" />
     <script>
       (function () {
-        var stored = localStorage.getItem('markeron-lang');
+        var stored = localStorage.getItem('markeronplus-lang');
         var locale =
           stored || (navigator.language && navigator.language.indexOf('zh') === 0 ? 'zh-CN' : 'en');
         document.documentElement.lang = locale === 'zh-CN' ? 'zh-CN' : 'en';
@@ -40,14 +40,14 @@
       <div class="content-wrap header-inner">
         <a class="brand" href="#top" data-i18n-aria="nav.brandAria">
           <img src="assets/icon.png" width="32" height="32" alt="" aria-hidden="true" />
-          <span translate="no">MarkerOn</span>
+          <span translate="no">MarkerOnPlus</span>
         </a>
         <div class="header-actions">
           <nav class="nav-links" data-i18n-aria="nav.linksAria">
             <a href="#features" data-i18n="nav.features">Features</a>
             <a href="#download" data-i18n="nav.download">Download</a>
             <a href="#faq" data-i18n="nav.faq">FAQ</a>
-            <a class="nav-cta" href="https://github.com/ifer47/markeron" data-i18n="nav.github">GitHub</a>
+            <a class="nav-cta" href="https://github.com/ifer47/markeronplus" data-i18n="nav.github">GitHub</a>
           </nav>
           <div class="lang-switch" role="group" data-i18n-aria="nav.langAria">
             <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">EN</button>
@@ -72,13 +72,13 @@
         <div class="content-wrap hero-grid">
           <div class="hero-content">
             <p class="eyebrow" data-i18n="hero.eyebrow">Open source / Tauri v2 / ~1.5&nbsp;MB</p>
-            <h1 id="hero-title" translate="no">MarkerOn</h1>
+            <h1 id="hero-title" translate="no">MarkerOnPlus</h1>
             <p class="hero-copy" data-i18n="hero.copy">
               A keyboard-first screen annotation tool for demos, teaching, meetings, and recordings. Draw over any app,
               then switch to click-through mode while your marks stay visible.
             </p>
             <div class="hero-actions" data-i18n-aria="hero.downloadAria">
-              <a class="button primary" href="https://github.com/ifer47/markeron/releases/latest" data-i18n="hero.downloadLatest">
+              <a class="button primary" href="https://github.com/ifer47/markeronplus/releases/latest" data-i18n="hero.downloadLatest">
                 Download Latest
               </a>
               <a
@@ -176,7 +176,7 @@
                     height="600"
                     loading="lazy"
                     data-i18n-alt="showcase.toolsAlt"
-                    alt="MarkerOn annotation tools"
+                    alt="MarkerOnPlus annotation tools"
                   />
                 </figure>
                 <p class="panel-caption" data-i18n="showcase.toolsCaption">Pen, highlighter, arrow, shapes, eraser, text, and colors.</p>
@@ -192,7 +192,7 @@
                     height="600"
                     loading="lazy"
                     data-i18n-alt="showcase.settingsAlt"
-                    alt="MarkerOn settings panel"
+                    alt="MarkerOnPlus settings panel"
                   />
                 </figure>
                 <p class="panel-caption" data-i18n="showcase.settingsCaption">Toolbar, whiteboard, drag modes, shortcuts, and startup.</p>
@@ -243,7 +243,7 @@
         <div class="content-wrap">
           <div class="bottom-intro">
             <p class="eyebrow" data-i18n="bottom.eyebrow">Get started</p>
-            <h2 data-i18n="bottom.title">Download MarkerOn or read the FAQ.</h2>
+            <h2 data-i18n="bottom.title">Download MarkerOnPlus or read the FAQ.</h2>
             <p class="section-lead" data-i18n="bottom.lead">Official installers and quick answers when comparing screen annotation tools.</p>
           </div>
 
@@ -251,7 +251,7 @@
             <div class="bottom-panel" id="download" aria-labelledby="download-label">
               <h3 class="bottom-panel-label" id="download-label" data-i18n="bottom.downloadLabel">Official downloads</h3>
               <div class="info-list">
-                <a class="info-card info-card-dark" href="https://github.com/ifer47/markeron/releases/latest">
+                <a class="info-card info-card-dark" href="https://github.com/ifer47/markeronplus/releases/latest">
                   <span class="info-card-title" data-i18n="bottom.githubTitle">GitHub Releases</span>
                   <span class="info-card-desc" data-i18n="bottom.githubDesc">Windows, macOS, Linux assets</span>
                   <span class="info-card-mark" aria-hidden="true">→</span>
@@ -261,7 +261,7 @@
                   <span class="info-card-desc" data-i18n="bottom.storeDesc">Windows install and updates</span>
                   <span class="info-card-mark" aria-hidden="true">→</span>
                 </a>
-                <a class="info-card info-card-green" href="https://github.com/ifer47/markeron">
+                <a class="info-card info-card-green" href="https://github.com/ifer47/markeronplus">
                   <span class="info-card-title" data-i18n="bottom.sourceTitle">Source Code</span>
                   <span class="info-card-desc" data-i18n="bottom.sourceDesc">MIT licensed on GitHub</span>
                   <span class="info-card-mark" aria-hidden="true">→</span>
@@ -273,7 +273,7 @@
               <h3 class="bottom-panel-label" id="faq-label" data-i18n="bottom.faqLabel">Common questions</h3>
               <div class="info-list">
                 <article class="info-card info-card-dark">
-                  <h4 class="info-card-title" data-i18n="bottom.faq1Title">Is MarkerOn a ZoomIt alternative?</h4>
+                  <h4 class="info-card-title" data-i18n="bottom.faq1Title">Is MarkerOnPlus a ZoomIt alternative?</h4>
                   <p class="info-card-desc" data-i18n="bottom.faq1Desc">
                     Keyboard-first annotation and click-through drawing. Use Magnifier if you need zoom.
                   </p>
@@ -297,8 +297,8 @@
 
     <footer class="site-footer">
       <div class="content-wrap footer-inner">
-        <span data-i18n="footer.license">MarkerOn is open source under the MIT License.</span>
-        <a href="https://github.com/ifer47/markeron/issues" data-i18n="footer.feedback">Feedback and issues</a>
+        <span data-i18n="footer.license">MarkerOnPlus is open source under the MIT License.</span>
+        <a href="https://github.com/ifer47/markeronplus/issues" data-i18n="footer.feedback">Feedback and issues</a>
       </div>
     </footer>
     <script src="i18n.js"></script>

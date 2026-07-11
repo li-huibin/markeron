@@ -1,5 +1,5 @@
 ---
-description: Conventional Commits for MarkerOn — use npm run commit; body line length and types feed release notes.
+description: Conventional Commits for MarkerOnPlus — use npm run commit; body line length and types feed release notes.
 globs: commitlint.config.js,.husky/**,CONTRIBUTING.md
 alwaysApply: false
 ---

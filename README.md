@@ -1,6 +1,6 @@
 <div align="center">
-  <img src=".github/assets/icon.png" width="80" height="80" alt="MarkerOn icon" />
-  <h1>MarkerOn</h1>
+  <img src=".github/assets/icon.png" width="80" height="80" alt="MarkerOnPlus icon" />
+  <h1>MarkerOnPlus</h1>
   <p>
     <a href="./README_zh.md">中文</a>
   </p>
@@ -13,12 +13,12 @@
     <a href="https://markeron.cn/"><img src="https://img.shields.io/badge/website-docs-0ea5e9" alt="Website" /></a>
     <a href="https://afdian.com/a/markeron"><img src="https://img.shields.io/badge/爱发电-赞助-946ce6" alt="Sponsor on 爱发电" /></a>
   </p>
-  <p><strong>Lightweight screen annotation tool</strong> (~1.5 MB) — press a hotkey (<strong>keyboard-first</strong>) to instantly draw, highlight, and annotate anywhere on your desktop. Built for demos, teaching, meetings, and screen recording.<strong>Free &amp; open source.</strong> If MarkerOn saves you time in demos, teaching, or meetings, <a href="https://afdian.com/a/markeron"><strong>sponsor on Afdian</strong></a> — every contribution helps keep the project maintained.</p>
+  <p><strong>Lightweight screen annotation tool</strong> (~1.5 MB) — press a hotkey (<strong>keyboard-first</strong>) to instantly draw, highlight, and annotate anywhere on your desktop. Built for demos, teaching, meetings, and screen recording.<strong>Free &amp; open source.</strong> If MarkerOnPlus saves you time in demos, teaching, or meetings, <a href="https://afdian.com/a/markeron"><strong>sponsor on Afdian</strong></a> — every contribution helps keep the project maintained.</p>
 </div>
 
 
 <p align="center">
-  <img src="assets/MarkerOn_en.png" width="720" alt="MarkerOn" />
+  <img src="assets/MarkerOnPlus_en.png" width="720" alt="MarkerOnPlus" />
 </p>
 
 **Contents:** [Download](#download) · [Quick Start](#quick-start) · [Features](#features) · [Shortcuts](#keyboard-shortcuts) · [Feedback](#feedback--issues) · [Development](#development)
@@ -30,7 +30,7 @@
   <a href="https://github.com/ifer47/markeron/releases/latest"><img src="https://img.shields.io/badge/macOS-ARM64-000000?logo=apple&logoColor=white" alt="macOS ARM64" /></a>
   <a href="https://github.com/ifer47/markeron/releases/latest"><img src="https://img.shields.io/badge/macOS-x64-666666?logo=apple&logoColor=white" alt="macOS x64" /></a>
   <a href="https://github.com/ifer47/markeron/releases/latest"><img src="https://img.shields.io/badge/Linux-x64-FCC624?logo=linux&logoColor=black" alt="Linux" /></a>
-  <a href="https://get.microsoft.com/installer/download/9n6623x973jv?referrer=appbadge"><img src="https://img.shields.io/badge/Microsoft_Store-MarkerOn-0078D4?logo=microsoftstore&logoColor=white" alt="Microsoft Store" /></a>
+  <a href="https://get.microsoft.com/installer/download/9n6623x973jv?referrer=appbadge"><img src="https://img.shields.io/badge/Microsoft_Store-MarkerOnPlus-0078D4?logo=microsoftstore&logoColor=white" alt="Microsoft Store" /></a>
 </p>
 
 **[Download Latest Release](https://github.com/ifer47/markeron/releases/latest)** — pick the installer for your platform from the assets list.
@@ -45,7 +45,7 @@ winget install --id 9N6623X973JV --source msstore
 
 ## Quick Start
 
-1. **Install and launch** — MarkerOn runs in the **system tray**; no window appears.
+1. **Install and launch** — MarkerOnPlus runs in the **system tray**; no window appears.
 2. **Enter annotation mode** — press <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd> (<kbd>Command</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd> on macOS).
 3. **Draw, then click through** — use number keys for tools; press <kbd>X</kbd> to interact with apps below while keeping annotations visible; press <kbd>Esc</kbd> to exit.
 
@@ -62,6 +62,8 @@ winget install --id 9N6623X973JV --source msstore
 - **Preserve drawings** — enable **Keep after exit** under Whiteboard & content to resume on re-enter
 - **Whiteboard mode** — set default entry to whiteboard, or press <kbd>W</kbd> to toggle; content rules are in **Whiteboard & content** settings
 - **Whiteboard copy** — copy the whiteboard as an image with <kbd>Ctrl</kbd>/<kbd>Command</kbd> + <kbd>C</kbd>
+- **Region screenshot** — press the global hotkey to start screenshot, drag to select any region, automatically copied to clipboard
+- **Pinned images** — after screenshot, choose "Pin image" to keep the screenshot floating on screen; drag to move, scroll to zoom, multiple images supported
 
 <p align="center">
   <img src="assets/click-through-mode.gif" width="720" alt="Click-through mode demo — draw on screen, press X, then interact with apps below while annotations stay visible" />
@@ -91,6 +93,7 @@ On **macOS**, use <kbd>Command</kbd> (⌘) in place of <kbd>Ctrl</kbd>, and <kbd
 | Toggle annotation mode | <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd> | <kbd>Command</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd> |
 | Clear all annotations | <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>C</kbd> | <kbd>Command</kbd> + <kbd>Shift</kbd> + <kbd>C</kbd> |
 | Toggle click-through mode | <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>X</kbd> | <kbd>Command</kbd> + <kbd>Shift</kbd> + <kbd>X</kbd> |
+| Region screenshot | <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd> | <kbd>Command</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd> |
 
 ### Tool Switching
 

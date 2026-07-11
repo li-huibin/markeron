@@ -24,11 +24,13 @@ const defaultShortcutStrings = computed(() =>
         toggleDrawing: 'Command+Shift+D',
         clearDrawing: 'Command+Shift+C',
         togglePenetration: 'Command+Shift+X',
+        screenshot: 'Command+Shift+S',
       }
     : {
         toggleDrawing: 'Ctrl+Shift+D',
         clearDrawing: 'Ctrl+Shift+C',
         togglePenetration: 'Ctrl+Shift+X',
+        screenshot: 'Ctrl+Shift+S',
       },
 )
 
@@ -44,12 +46,14 @@ const shortcuts = reactive<AppConfig['shortcuts']>({
   toggleDrawing: '',
   clearDrawing: '',
   togglePenetration: '',
+  screenshot: '',
 })
 
 const labels = computed<Record<keyof AppConfig['shortcuts'], string>>(() => ({
   toggleDrawing: t('settings.shortcutLabels.toggleDrawing'),
   clearDrawing: t('settings.shortcutLabels.clearDrawing'),
   togglePenetration: t('settings.shortcutLabels.togglePenetration'),
+  screenshot: t('settings.shortcutLabels.screenshot'),
 }))
 
 const capturing = ref<keyof AppConfig['shortcuts'] | null>(null)
@@ -149,12 +153,14 @@ async function resetDefaults() {
       toggleDrawing: d.toggleDrawing,
       clearDrawing: d.clearDrawing,
       togglePenetration: d.togglePenetration,
+      screenshot: d.screenshot,
     },
   })
   if (res.ok) {
     shortcuts.toggleDrawing = d.toggleDrawing
     shortcuts.clearDrawing = d.clearDrawing
     shortcuts.togglePenetration = d.togglePenetration
+    shortcuts.screenshot = d.screenshot
     message.value = { type: 'success', text: t('settings.restoredDefaults') }
     setTimeout(() => {
       message.value = null
@@ -213,7 +219,7 @@ onUnmounted(() => {
             fill="currentColor"
           />
         </svg>
-        <span class="text-[13px] font-semibold settings-text-brand tracking-wide leading-tight">MarkerOn</span>
+        <span class="text-[13px] font-semibold settings-text-brand tracking-wide leading-tight">MarkerOnPlus</span>
       </div>
 
       <nav role="tablist" aria-orientation="vertical" class="flex flex-col gap-0.5 px-2">

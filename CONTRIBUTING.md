@@ -1,4 +1,4 @@
-# Contributing to MarkerOn
+# Contributing to MarkerOnPlus
 
 Thank you for your interest in contributing!
 

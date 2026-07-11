@@ -7,6 +7,7 @@ import { useDrawing, type Tool, type DrawAction } from '../composables/useDrawin
 import type { TextOutlineStyle } from '../composables/drawingTypes'
 import { useTooltip } from '../composables/useTooltip'
 import { createKeyDownHandler } from '../composables/useOverlayKeyboard'
+import PinnedImages from './PinnedImages.vue'
 import {
   OVERLAY_STATE_EVENT,
   TOOLBAR_ACTION_EVENT,
@@ -1806,6 +1807,8 @@ function exitDrawing(reason: 'keyboard' | 'toolbar' | 'unknown' = 'unknown') {
         </div>
       </div>
     </Transition>
+
+    <PinnedImages />
   </div>
 </template>
 

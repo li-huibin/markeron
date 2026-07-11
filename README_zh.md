@@ -1,6 +1,6 @@
 <div align="center">
-  <img src=".github/assets/icon.png" width="80" height="80" alt="MarkerOn icon" />
-  <h1>MarkerOn</h1>
+  <img src=".github/assets/icon.png" width="80" height="80" alt="MarkerOnPlus icon" />
+  <h1>MarkerOnPlus</h1>
   <p>
     <a href="./README.md">English</a>
   </p>
@@ -13,12 +13,12 @@
     <a href="https://markeron.cn/"><img src="https://img.shields.io/badge/网站-文档-0ea5e9" alt="网站" /></a>
     <a href="https://afdian.com/a/markeron"><img src="https://img.shields.io/badge/爱发电-赞助-946ce6" alt="爱发电赞助" /></a>
   </p>
-  <p><strong>轻量级屏幕标注工具</strong>（~1.5 MB）— 按下快捷键（<strong>快捷键优先</strong>），随时在桌面上自由绘画、标注。适用于课堂演示 / 会议讲解 / 录屏批注。<strong>免费开源。</strong>如果 MarkerOn 在你的演示、教学或会议中帮到了你，欢迎 <a href="https://afdian.com/a/markeron"><strong>在爱发电赞助</strong></a>，每一份支持都有助于项目的持续维护。</p>
+  <p><strong>轻量级屏幕标注工具</strong>（~1.5 MB）— 按下快捷键（<strong>快捷键优先</strong>），随时在桌面上自由绘画、标注。适用于课堂演示 / 会议讲解 / 录屏批注。<strong>免费开源。</strong>如果 MarkerOnPlus 在你的演示、教学或会议中帮到了你，欢迎 <a href="https://afdian.com/a/markeron"><strong>在爱发电赞助</strong></a>，每一份支持都有助于项目的持续维护。</p>
 </div>
 
 
 <p align="center">
-  <img src="assets/MarkerOn.png" width="720" alt="MarkerOn" />
+  <img src="assets/MarkerOnPlus.png" width="720" alt="MarkerOnPlus" />
 </p>
 
 **目录：** [下载安装](#下载安装) · [快速开始](#快速开始) · [功能一览](#功能一览) · [快捷键](#快捷键一览) · [反馈](#反馈与-issue) · [开发构建](#开发构建)
@@ -30,7 +30,7 @@
   <a href="https://github.com/ifer47/markeron/releases/latest"><img src="https://img.shields.io/badge/macOS-ARM64-000000?logo=apple&logoColor=white" alt="macOS ARM64" /></a>
   <a href="https://github.com/ifer47/markeron/releases/latest"><img src="https://img.shields.io/badge/macOS-x64-666666?logo=apple&logoColor=white" alt="macOS x64" /></a>
   <a href="https://github.com/ifer47/markeron/releases/latest"><img src="https://img.shields.io/badge/Linux-x64-FCC624?logo=linux&logoColor=black" alt="Linux" /></a>
-  <a href="https://get.microsoft.com/installer/download/9n6623x973jv?referrer=appbadge"><img src="https://img.shields.io/badge/微软商店-MarkerOn-0078D4?logo=microsoftstore&logoColor=white" alt="Microsoft Store" /></a>
+  <a href="https://get.microsoft.com/installer/download/9n6623x973jv?referrer=appbadge"><img src="https://img.shields.io/badge/微软商店-MarkerOnPlus-0078D4?logo=microsoftstore&logoColor=white" alt="Microsoft Store" /></a>
 </p>
 
 **[下载最新版本](https://github.com/ifer47/markeron/releases/latest)** — 在 Assets 列表中选择对应平台的安装包下载。
@@ -45,7 +45,7 @@ winget install --id 9N6623X973JV --source msstore
 
 ## 快速开始
 
-1. **安装并启动** — MarkerOn 在 **系统托盘** 静默运行，不会弹出窗口。
+1. **安装并启动** — MarkerOnPlus 在 **系统托盘** 静默运行，不会弹出窗口。
 2. **进入标注模式** — 按 <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd>（macOS 为 <kbd>Command</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd>）。
 3. **绘画与穿透** — 数字键切换工具；按 <kbd>X</kbd> 可在保留标注的同时操作下层应用；按 <kbd>Esc</kbd> 退出。
 
@@ -62,6 +62,8 @@ winget install --id 9N6623X973JV --source msstore
 - **保留标注** — 可在「白板与内容」中开启退出后保留；下次进入自动恢复
 - **白板模式** — 可设为默认进入白板，或按 <kbd>W</kbd> 切换；内容与切换行为均在「白板与内容」中配置
 - **白板复制** — 在白板模式下按 <kbd>Ctrl</kbd>/<kbd>Command</kbd> + <kbd>C</kbd> 可复制当前白板为图片
+- **区域截图** — 按全局快捷键启动截图，鼠标拖拽选择任意区域，自动复制到剪贴板
+- **图片固定** — 截图后可选择「固定图片」，将截图以悬浮方式固定在屏幕上；支持拖拽移动、滚轮缩放、多张图片同时固定
 
 <p align="center">
   <img src="assets/click-through-mode.gif" width="720" alt="穿透模式演示 — 在屏幕上绘画，按 X 后可在保留标注的同时操作下层应用" />
@@ -91,6 +93,7 @@ winget install --id 9N6623X973JV --source msstore
 | 开启 / 退出标注模式 | <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd> | <kbd>Command</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd> |
 | 清除所有标注 | <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>C</kbd> | <kbd>Command</kbd> + <kbd>Shift</kbd> + <kbd>C</kbd> |
 | 切换穿透模式 | <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>X</kbd> | <kbd>Command</kbd> + <kbd>Shift</kbd> + <kbd>X</kbd> |
+| 区域截图 | <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd> | <kbd>Command</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd> |
 
 ### 工具切换
 

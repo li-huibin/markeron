@@ -187,7 +187,7 @@ fn create_toolbar_window(app: &AppHandle) {
 
     let url = WebviewUrl::App("index.html#toolbar".into());
     let builder = WebviewWindowBuilder::new(app, "toolbar", url)
-        .title("MarkerOn")
+        .title("MarkerOnPlus")
         .inner_size(TOOLBAR_WIDTH, 480.0)
         .decorations(false)
         .transparent(true)

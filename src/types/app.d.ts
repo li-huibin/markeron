@@ -5,6 +5,7 @@ export interface AppConfig {
     toggleDrawing: string
     clearDrawing: string
     togglePenetration: string
+    screenshot: string
   }
   general: {
     dragMode?: DragMode

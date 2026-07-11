@@ -5,12 +5,14 @@ import { useUpdater } from './composables/useUpdater'
 
 const DrawingOverlay = defineAsyncComponent(() => import('./components/DrawingOverlay.vue'))
 const ToolbarWindow = defineAsyncComponent(() => import('./components/ToolbarWindow.vue'))
+const ScreenshotOverlay = defineAsyncComponent(() => import('./components/ScreenshotOverlay.vue'))
 
-type AppMode = 'overlay' | 'settings' | 'toolbar'
+type AppMode = 'overlay' | 'settings' | 'toolbar' | 'screenshot'
 
 function resolveAppMode(): AppMode {
   if (window.location.hash.startsWith('#settings')) return 'settings'
   if (window.location.hash.startsWith('#toolbar')) return 'toolbar'
+  if (window.location.hash.startsWith('#screenshot')) return 'screenshot'
   return 'overlay'
 }
 
@@ -68,5 +70,6 @@ onMounted(async () => {
 <template>
   <component :is="SettingsView" v-if="mode === 'settings' && SettingsView" />
   <ToolbarWindow v-else-if="mode === 'toolbar'" />
+  <ScreenshotOverlay v-else-if="mode === 'screenshot'" />
   <DrawingOverlay v-else-if="mode === 'overlay'" />
 </template>

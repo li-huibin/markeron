@@ -1,4 +1,10 @@
 export default {
+  screenshot: {
+    pin: 'Pin Image',
+    cancel: 'Cancel',
+    pinned: 'Pinned',
+    noImages: 'No pinned images',
+  },
   tools: {
     pen: 'Pen',
     highlighter: 'Highlighter',
@@ -79,6 +85,7 @@ export default {
       toggleDrawing: 'Toggle annotation',
       clearDrawing: 'Clear annotations',
       togglePenetration: 'Toggle click-through',
+      screenshot: 'Screenshot',
     },
     shortcutsSaved: 'Shortcuts saved',
     shortcutsConflict: 'These shortcuts are occupied: {keys}',
@@ -244,6 +251,6 @@ export default {
     help: 'Help',
     about: 'About',
     quit: 'Quit',
-    windowTitle: 'MarkerOn Settings',
+    windowTitle: 'MarkerOnPlus Settings',
   },
 }

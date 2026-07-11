@@ -30,6 +30,31 @@ pub use overlay::{
     setup_overlay_size, toggle_drawing, toggle_penetration_mode,
 };
 
+pub fn toggle_screenshot(app: &AppHandle) {
+    if let Some(win) = app.get_webview_window("screenshot") {
+        if win.is_visible().unwrap_or(false) {
+            win.hide().ok();
+        } else {
+            win.show().ok();
+            win.set_focus().ok();
+        }
+        return;
+    }
+
+    let url = WebviewUrl::App("index.html#screenshot".into());
+    let builder = WebviewWindowBuilder::new(app, "screenshot", url)
+        .title("MarkerOnPlus Screenshot")
+        .decorations(false)
+        .transparent(true)
+        .always_on_top(true)
+        .resizable(false)
+        .skip_taskbar(true);
+
+    if let Err(e) = builder.build() {
+        warn!("Failed to create screenshot window: {}", e);
+    }
+}
+
 pub fn rebuild_tray_menu(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     let s = i18n::strings();
     if let Some(tray) = app.tray_by_id("main") {
@@ -151,12 +176,14 @@ pub fn run() {
             diagnostics::append_diagnostic_event,
             clipboard::copy_screen,
             clipboard::copy_whiteboard,
+            clipboard::capture_region,
+            commands::pin_screenshot,
         ])
         .setup(|app| {
             let handle = app.handle().clone();
             let log_guard = diagnostics::init_tracing(&handle)?;
             app.manage(log_guard);
-            info!("Starting MarkerOn");
+            info!("Starting MarkerOnPlus");
 
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
@@ -218,7 +245,7 @@ pub fn run() {
         })
         .on_window_event(|window, event| match event {
             tauri::WindowEvent::CloseRequested { api, .. }
-                if window.label() == "overlay" || window.label() == "toolbar" =>
+                if window.label() == "overlay" || window.label() == "toolbar" || window.label() == "screenshot" =>
             {
                 api.prevent_close();
                 window.hide().ok();
@@ -235,5 +262,5 @@ pub fn run() {
             _ => {}
         })
         .run(tauri::generate_context!())
-        .expect("error while running MarkerOn");
+        .expect("error while running MarkerOnPlus");
 }

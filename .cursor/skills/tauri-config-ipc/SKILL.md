@@ -1,12 +1,12 @@
 ---
 name: tauri-config-ipc
 description: >-
-  Extend MarkerOn settings, persisted config, or Tauri IPC commands. Use when
+  Extend MarkerOnPlus settings, persisted config, or Tauri IPC commands. Use when
   adding config fields, new invoke commands, settings UI toggles, or changing
   config.json shape.
 ---
 
-# Tauri Config & IPC (MarkerOn)
+# Tauri Config & IPC (MarkerOnPlus)
 
 ## Architecture
 

@@ -12,6 +12,8 @@ pub struct Shortcuts {
     pub clear_drawing: String,
     #[serde(default = "default_toggle_penetration", rename = "togglePenetration")]
     pub toggle_penetration: String,
+    #[serde(default = "default_screenshot", rename = "screenshot")]
+    pub screenshot: String,
 }
 
 fn default_toggle_penetration() -> String {
@@ -22,6 +24,17 @@ fn default_toggle_penetration() -> String {
     #[cfg(not(target_os = "macos"))]
     {
         "Ctrl+Shift+X".into()
+    }
+}
+
+fn default_screenshot() -> String {
+    #[cfg(target_os = "macos")]
+    {
+        "Command+Shift+S".into()
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        "Ctrl+Shift+S".into()
     }
 }
 
@@ -172,6 +185,7 @@ pub fn default_shortcuts() -> Shortcuts {
             toggle_drawing: "Command+Shift+D".into(),
             clear_drawing: "Command+Shift+C".into(),
             toggle_penetration: "Command+Shift+X".into(),
+            screenshot: "Command+Shift+S".into(),
         }
     }
     #[cfg(not(target_os = "macos"))]
@@ -180,6 +194,7 @@ pub fn default_shortcuts() -> Shortcuts {
             toggle_drawing: "Ctrl+Shift+D".into(),
             clear_drawing: "Ctrl+Shift+C".into(),
             toggle_penetration: "Ctrl+Shift+X".into(),
+            screenshot: "Ctrl+Shift+S".into(),
         }
     }
 }

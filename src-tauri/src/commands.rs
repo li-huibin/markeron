@@ -13,6 +13,7 @@ fn duplicate_shortcut_errors(shortcuts: &Shortcuts) -> Vec<String> {
         (s.toggle_drawing, shortcuts.toggle_drawing.as_str()),
         (s.clear_drawing, shortcuts.clear_drawing.as_str()),
         (s.toggle_penetration, shortcuts.toggle_penetration.as_str()),
+        ("Screenshot", shortcuts.screenshot.as_str()),
     ];
     let mut failed = Vec::new();
     for i in 0..actions.len() {
@@ -77,6 +78,7 @@ pub fn save_shortcuts(
         (s.toggle_drawing, &shortcuts.toggle_drawing),
         (s.clear_drawing, &shortcuts.clear_drawing),
         (s.toggle_penetration, &shortcuts.toggle_penetration),
+        ("Screenshot", &shortcuts.screenshot),
     ];
 
     for (label, accel) in &actions {
@@ -232,6 +234,13 @@ const ALLOWED_URL_PREFIXES: &[&str] = &["https://github.com/", "https://apps.mic
 #[tauri::command]
 pub fn reveal_settings_window(app: AppHandle) {
     crate::reveal_settings_window(&app);
+}
+
+#[tauri::command]
+pub fn pin_screenshot(app: AppHandle, image: String) -> AppResult<()> {
+    app.emit("pin-image", serde_json::json!({ "image": image }))
+        .map_err(|e| AppError::Other(e.to_string()))?;
+    Ok(())
 }
 
 #[tauri::command]

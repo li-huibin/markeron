@@ -39,7 +39,7 @@ export function writeVersion(nextVersion) {
   writeFileSync(
     cargoLockPath,
     readFileSync(cargoLockPath, 'utf8').replace(
-      /(\[\[package\]\]\nname = "markeron"\nversion = ")[^"]+(")/,
+      /(\[\[package\]\]\nname = "markeronplus"\nversion = ")[^"]+(")/,
       `$1${nextVersion}$2`,
     ),
   )

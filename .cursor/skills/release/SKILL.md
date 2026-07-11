@@ -1,10 +1,10 @@
 ---
 description: >-
-  MarkerOn release workflow. Use when the user asks to release, publish, bump
+  MarkerOnPlus release workflow. Use when the user asks to release, publish, bump
   version, create a tag, or cut a new version. Never release manually.
 ---
 
-# MarkerOn Release
+# MarkerOnPlus Release
 
 ## Single entry point
 
@@ -53,7 +53,7 @@ Output format:
 ### 🧹 Improvements
 - ...
 
-**Full Changelog**: https://github.com/ifer47/markeron/compare/vA.B.C...vX.Y.Z
+**Full Changelog**: https://github.com/ifer47/markeronplus/compare/vA.B.C...vX.Y.Z
 ```
 
 Release notes are derived from **Conventional Commits** since the previous tag. Use `npm run commit` (czg) for daily commits so notes categorize correctly.
@@ -68,7 +68,7 @@ Release notes are derived from **Conventional Commits** since the previous tag. 
 
 ## After release
 
-Monitor: https://github.com/ifer47/markeron/actions/workflows/release.yml
+Monitor: https://github.com/ifer47/markeronplus/actions/workflows/release.yml
 
 If release notes job fails, fix `.github/workflows/release.yml` on `master`, delete + recreate tag (see skill `cross-platform-tauri-ui` not needed — use release workflow fix + retag).
 

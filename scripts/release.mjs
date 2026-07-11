@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * MarkerOn release automation.
+ * MarkerOnPlus release automation.
  *
  * Usage:
  *   npm run release:check          # pre-release validation only
@@ -100,7 +100,7 @@ function previewNotes(tag) {
       console.log(`  • ${line}`)
     }
     console.log(`\nCI will format these into ✨ New / 🛠 Fixes / 🧹 Improvements sections.`)
-    console.log(`Compare: https://github.com/ifer47/markeron/compare/${prevTag}...${tag}`)
+    console.log(`Compare: https://github.com/ifer47/markeronplus/compare/${prevTag}...${tag}`)
   } catch {
     console.log('(Could not preview — notes will be generated on CI)')
   }
@@ -155,8 +155,8 @@ Usage:
   console.log(`
 ✔ Release ${tag} started.
 
-  Release page : https://github.com/ifer47/markeron/releases/tag/${tag}
-  Actions      : https://github.com/ifer47/markeron/actions/workflows/release.yml
+  Release page : https://github.com/ifer47/markeronplus/releases/tag/${tag}
+  Actions      : https://github.com/ifer47/markeronplus/actions/workflows/release.yml
 
 Notes are generated automatically by .github/workflows/release.yml
 using .github/release.yml categories + conventional commit fallback.

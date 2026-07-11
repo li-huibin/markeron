@@ -31,19 +31,19 @@
 
 ## Suggested Meta Title
 
-MarkerOn - Lightweight Screen Annotation Tool with Click-Through Mode
+MarkerOnPlus - Lightweight Screen Annotation Tool with Click-Through Mode
 
 ## Suggested Meta Description
 
-MarkerOn is a lightweight open-source screen annotation tool for Windows, macOS, and Linux. Draw over any app, use click-through mode, switch to whiteboard mode, and control everything from the keyboard.
+MarkerOnPlus is a lightweight open-source screen annotation tool for Windows, macOS, and Linux. Draw over any app, use click-through mode, switch to whiteboard mode, and control everything from the keyboard.
 
 ## Chinese Meta Title
 
-MarkerOn - 轻量级开源屏幕标注工具，支持穿透模式
+MarkerOnPlus - 轻量级开源屏幕标注工具，支持穿透模式
 
 ## Chinese Meta Description
 
-MarkerOn 是一款轻量级开源屏幕标注工具，支持在任意桌面应用上绘制、穿透模式、白板模式、快捷键操作，适合讲课、演示、录屏和远程会议。
+MarkerOnPlus 是一款轻量级开源屏幕标注工具，支持在任意桌面应用上绘制、穿透模式、白板模式、快捷键操作，适合讲课、演示、录屏和远程会议。
 
 ## Directory Categories
 

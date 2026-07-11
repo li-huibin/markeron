@@ -18,7 +18,7 @@ if (!tag || !mergedLatestPath) {
   process.exit(1)
 }
 
-const repo = process.env.GH_REPO || 'ifer47/markeron'
+const repo = process.env.GH_REPO || 'ifer47/markeronplus'
 
 function gh(args, { json = true, allowFail = false } = {}) {
   const result = spawnSync('gh', args, {
@@ -61,7 +61,7 @@ const duplicates = releases.slice(1)
 console.log(`Primary release #${primary.id} (${primary.draft ? 'draft' : 'published'}, ${primary.assets.length} assets)`)
 
 const primaryNames = new Set(primary.assets.map((a) => a.name))
-const tmp = mkdtempSync(join(tmpdir(), 'markeron-release-'))
+const tmp = mkdtempSync(join(tmpdir(), 'markeronplus-release-'))
 
 try {
   for (const release of duplicates) {

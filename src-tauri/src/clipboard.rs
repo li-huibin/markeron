@@ -3,6 +3,208 @@ use std::borrow::Cow;
 use base64::Engine;
 
 #[tauri::command]
+pub fn capture_region(
+    x: i32,
+    y: i32,
+    width: i32,
+    height: i32,
+) -> Result<String, String> {
+    if width <= 0 || height <= 0 {
+        return Err("Invalid region dimensions".to_string());
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        #[allow(clippy::upper_case_acronyms)]
+        #[repr(C)]
+        struct BITMAPINFOHEADER {
+            bi_size: u32,
+            bi_width: i32,
+            bi_height: i32,
+            bi_planes: u16,
+            bi_bit_count: u16,
+            bi_compression: u32,
+            bi_size_image: u32,
+            bi_x_pels_per_meter: i32,
+            bi_y_pels_per_meter: i32,
+            bi_clr_used: u32,
+            bi_clr_important: u32,
+        }
+        #[allow(clippy::upper_case_acronyms)]
+        #[repr(C)]
+        struct BITMAPINFO {
+            header: BITMAPINFOHEADER,
+            _colors: [u32; 1],
+        }
+
+        const SRCCOPY: u32 = 0x00CC0020;
+
+        extern "system" {
+            fn GetDC(hwnd: isize) -> isize;
+            fn CreateCompatibleDC(hdc: isize) -> isize;
+            fn CreateCompatibleBitmap(hdc: isize, w: i32, h: i32) -> isize;
+            fn SelectObject(hdc: isize, h: isize) -> isize;
+            fn BitBlt(
+                dst: isize,
+                x: i32,
+                y: i32,
+                w: i32,
+                h: i32,
+                src: isize,
+                sx: i32,
+                sy: i32,
+                rop: u32,
+            ) -> i32;
+            fn GetDIBits(
+                hdc: isize,
+                hbm: isize,
+                start: u32,
+                lines: u32,
+                bits: *mut u8,
+                bmi: *mut BITMAPINFO,
+                usage: u32,
+            ) -> i32;
+            fn DeleteObject(h: isize) -> i32;
+            fn DeleteDC(hdc: isize) -> i32;
+            fn ReleaseDC(hwnd: isize, hdc: isize) -> i32;
+        }
+
+        unsafe {
+            let hdc_screen = GetDC(0);
+            if hdc_screen == 0 {
+                return Err("Failed to get screen DC".into());
+            }
+            let hdc_mem = CreateCompatibleDC(hdc_screen);
+            let hbm = CreateCompatibleBitmap(hdc_screen, width, height);
+            let old_obj = SelectObject(hdc_mem, hbm);
+            BitBlt(hdc_mem, 0, 0, width, height, hdc_screen, x, y, SRCCOPY);
+
+            let header_size = std::mem::size_of::<BITMAPINFOHEADER>();
+            let pixel_bytes = (width as usize) * (height as usize) * 4;
+            let total = header_size + pixel_bytes;
+
+            let mut buf = vec![0u8; total];
+            let ptr = buf.as_mut_ptr();
+
+            let mut bmi: BITMAPINFO = std::mem::zeroed();
+            bmi.header.bi_size = header_size as u32;
+            bmi.header.bi_width = width;
+            bmi.header.bi_height = height;
+            bmi.header.bi_planes = 1;
+            bmi.header.bi_bit_count = 32;
+
+            let scan_lines = GetDIBits(hdc_mem, hbm, 0, height as u32, ptr.add(header_size), &mut bmi, 0);
+
+            if scan_lines == 0 {
+                SelectObject(hdc_mem, old_obj);
+                DeleteObject(hbm);
+                DeleteDC(hdc_mem);
+                ReleaseDC(0, hdc_screen);
+                return Err("GetDIBits failed".into());
+            }
+
+            std::ptr::copy_nonoverlapping(&bmi.header as *const _ as *const u8, ptr, header_size);
+
+            SelectObject(hdc_mem, old_obj);
+            DeleteObject(hbm);
+            DeleteDC(hdc_mem);
+            ReleaseDC(0, hdc_screen);
+
+            let image: image::ImageBuffer<image::Rgba<u8>, Vec<u8>> = image::ImageBuffer::from_raw(width as u32, height as u32, buf[header_size..].to_vec())
+                .ok_or_else(|| "Failed to create image buffer".to_string())?;
+            
+            let mut cursor = std::io::Cursor::new(Vec::new());
+            image.write_to(&mut cursor, image::ImageFormat::Png)
+                .map_err(|e| format!("Failed to encode PNG: {}", e))?;
+            let png_data = cursor.into_inner();
+            let base64 = base64::engine::general_purpose::STANDARD.encode(&png_data);
+            
+            let mut cb = arboard::Clipboard::new().map_err(|e| format!("{}", e))?;
+            cb.set_image(arboard::ImageData {
+                width: width as usize,
+                height: height as usize,
+                bytes: Cow::Owned(image.into_raw()),
+            })
+            .map_err(|e| format!("{}", e))?;
+
+            Ok(format!("data:image/png;base64,{}", base64))
+        }
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        let region = format!("{},{},{},{}", x, y, width, height);
+        let output = std::process::Command::new("screencapture")
+            .args(["-x", "-R", &region, "-"])
+            .output()
+            .map_err(|e| format!("screencapture failed: {}", e))?;
+        
+        if !output.status.success() {
+            return Err(format!(
+                "screencapture exited with code {:?}",
+                output.status.code()
+            ));
+        }
+
+        let image = image::load_from_memory(&output.stdout)
+            .map_err(|e| format!("Failed to decode screenshot: {}", e))?
+            .to_rgba8();
+
+        let mut cb = arboard::Clipboard::new().map_err(|e| format!("{}", e))?;
+        cb.set_image(arboard::ImageData {
+            width: image.width() as usize,
+            height: image.height() as usize,
+            bytes: Cow::Owned(image.into_raw()),
+        })
+        .map_err(|e| format!("{}", e))?;
+
+        let base64 = base64::engine::general_purpose::STANDARD.encode(&output.stdout);
+        Ok(format!("data:image/png;base64,{}", base64))
+    }
+
+    #[cfg(not(any(target_os = "windows", target_os = "macos")))]
+    {
+        let monitors = std::panic::catch_unwind(xcap::Monitor::all)
+            .map_err(|_| {
+                "Screen capture not supported: Wayland compositor lacks required protocol".to_string()
+            })?
+            .map_err(|e| format!("{}", e))?;
+        let monitor = monitors.first().ok_or("No monitor found")?;
+        
+        let monitor_x = monitor.x().map_err(|e| format!("{}", e))?;
+        let monitor_y = monitor.y().map_err(|e| format!("{}", e))?;
+        
+        if x < monitor_x || y < monitor_y || x + width > monitor_x + monitor.width().map_err(|e| format!("{}", e))? || y + height > monitor_y + monitor.height().map_err(|e| format!("{}", e))? {
+            return Err("Region out of monitor bounds".to_string());
+        }
+
+        let full_image = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| monitor.capture_image()))
+            .map_err(|_| "Screen capture failed: compositor protocol error".to_string())?
+            .map_err(|e| format!("{}", e))?;
+
+        let cropped = image::imageops::crop(&mut full_image.clone(), (x - monitor_x) as u32, (y - monitor_y) as u32, width as u32, height as u32)
+            .to_image()
+            .to_rgba8();
+
+        let mut cb = arboard::Clipboard::new().map_err(|e| format!("{}", e))?;
+        cb.set_image(arboard::ImageData {
+            width: cropped.width() as usize,
+            height: cropped.height() as usize,
+            bytes: Cow::Owned(cropped.into_raw()),
+        })
+        .map_err(|e| format!("{}", e))?;
+
+        let mut cursor = std::io::Cursor::new(Vec::new());
+        cropped.write_to(&mut cursor, image::ImageFormat::Png)
+            .map_err(|e| format!("Failed to encode PNG: {}", e))?;
+        let png_data = cursor.into_inner();
+        let base64 = base64::engine::general_purpose::STANDARD.encode(&png_data);
+        
+        Ok(format!("data:image/png;base64,{}", base64))
+    }
+}
+
+#[tauri::command]
 pub fn copy_whiteboard(data_url: String) -> Result<(), String> {
     let (_, encoded) = data_url
         .split_once(',')

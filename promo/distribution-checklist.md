@@ -32,7 +32,7 @@ Then in GitHub **Settings → Pages**, confirm custom domain is `markeron.cn` an
 
 ### WinGet via Microsoft Store
 
-MarkerOn already appears in the Microsoft Store WinGet source:
+MarkerOnPlus already appears in the Microsoft Store WinGet source:
 
 ```powershell
 winget install --id 9N6623X973JV --source msstore --accept-source-agreements
@@ -77,7 +77,7 @@ Links:
 
 Use this metadata:
 
-- Name: `MarkerOn`
+- Name: `MarkerOnPlus`
 - Platforms: Windows, macOS, Linux
 - License: Open Source / MIT
 - Tags: screen annotation, desktop annotation, whiteboard, drawing, productivity, presentation
