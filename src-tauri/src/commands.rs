@@ -242,22 +242,39 @@ pub fn toggle_screenshot(app: AppHandle) {
 }
 
 #[tauri::command]
-pub fn pin_screenshot(app: AppHandle, image: String) -> AppResult<()> {
+pub fn pin_screenshot(
+    app: AppHandle,
+    state: tauri::State<'_, AppState>,
+    image: String,
+) -> AppResult<()> {
+    // Store the image as pending so PinnedImages.vue can pick it up on mount,
+    // even if the overlay webview hasn't loaded its JavaScript context yet.
+    lock_or_recover(&state.pending_pinned_images).push(image.clone());
+
     // Ensure the overlay window is visible and on top so pinned images are shown
     if let Some(overlay) = app.get_webview_window("overlay") {
         overlay.show().ok();
         overlay.set_always_on_top(true).ok();
         overlay.set_ignore_cursor_events(true).ok();
 
-        // Emit to the overlay window specifically so PinnedImages component receives it
-        app.emit_to("overlay", "pin-image", serde_json::json!({ "image": image }))
-            .map_err(|e| AppError::Other(e.to_string()))?;
+        // Also emit the event for real-time delivery if the listener is already active
+        let _ = app.emit_to(
+            "overlay",
+            "pin-image",
+            serde_json::json!({ "image": image }),
+        );
     } else {
-        // Fallback to global emit if overlay window not found
-        app.emit("pin-image", serde_json::json!({ "image": image }))
-            .map_err(|e| AppError::Other(e.to_string()))?;
+        let _ = app.emit("pin-image", serde_json::json!({ "image": image }));
     }
     Ok(())
+}
+
+/// Called by PinnedImages.vue on mount to retrieve any pinned screenshots
+/// that were stored before the overlay webview was ready.
+#[tauri::command]
+pub fn take_pending_pinned_images(state: tauri::State<'_, AppState>) -> Vec<String> {
+    let mut pending = lock_or_recover(&state.pending_pinned_images);
+    std::mem::take(&mut *pending)
 }
 
 #[tauri::command]

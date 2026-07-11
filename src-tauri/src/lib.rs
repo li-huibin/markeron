@@ -150,6 +150,7 @@ pub fn run() {
             suppress_penetration_until: Mutex::new(None),
             whiteboard_mode: Mutex::new(false),
             diagnostic_events: Mutex::new(Vec::new()),
+            pending_pinned_images: Mutex::new(Vec::new()),
         })
         .invoke_handler(tauri::generate_handler![
             commands::get_config,
@@ -179,6 +180,7 @@ pub fn run() {
             clipboard::capture_region,
             commands::toggle_screenshot,
             commands::pin_screenshot,
+            commands::take_pending_pinned_images,
         ])
         .setup(|app| {
             let handle = app.handle().clone();

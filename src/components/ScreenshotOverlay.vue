@@ -112,11 +112,12 @@ async function captureAndClose() {
   if (region.width < 10 || region.height < 10) return
 
   try {
+    const dpr = window.devicePixelRatio || 1
     const imageDataUrl = await invoke<string>('capture_region', {
-      x: Math.round(region.x),
-      y: Math.round(region.y),
-      width: Math.round(region.width),
-      height: Math.round(region.height),
+      x: Math.round(region.x * dpr),
+      y: Math.round(region.y * dpr),
+      width: Math.round(region.width * dpr),
+      height: Math.round(region.height * dpr),
     })
 
     capturedImage.value = imageDataUrl

@@ -243,6 +243,9 @@ pub struct AppState {
     pub whiteboard_mode: Mutex<bool>,
     /// Cross-window diagnostic ring buffer (overlay + settings are separate webviews).
     pub diagnostic_events: Mutex<Vec<crate::diagnostics::DiagnosticEvent>>,
+    /// Pinned screenshots waiting to be picked up by the overlay window's PinnedImages component.
+    /// Used as a fallback when emit_to("overlay") fails because the webview hasn't loaded yet.
+    pub pending_pinned_images: Mutex<Vec<String>>,
 }
 
 /// Lock a mutex with poison recovery — if a thread panicked while holding

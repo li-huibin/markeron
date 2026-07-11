@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
+import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from '../i18n'
 
 const { t } = useI18n()
@@ -114,6 +115,16 @@ let unlisten: UnlistenFn | null = null
 
 onMounted(async () => {
   unlisten = await listen('pin-image', handlePinImage)
+
+  // Pick up any pinned images that were stored before this component mounted
+  try {
+    const pending = await invoke<string[]>('take_pending_pinned_images')
+    for (const src of pending) {
+      addImage(src)
+    }
+  } catch {
+    // ignore if command not available
+  }
 })
 
 onUnmounted(() => {
