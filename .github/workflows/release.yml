@@ -230,8 +230,6 @@ jobs:
         id: tauri
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ needs.release-notes.outputs.tag }}
           releaseName: 'MarkerOnPlus ${{ needs.release-notes.outputs.tag }}'
@@ -239,26 +237,8 @@ jobs:
           releaseDraft: true
           prerelease: false
           updaterJsonPreferNsis: true
-          includeUpdaterJson: true
+          includeUpdaterJson: false
           args: ${{ matrix.args }} ${{ steps.codesign.outputs.sign_args }}
-
-      - name: Stash updater fragment
-        shell: bash
-        run: |
-          # tauri-action writes latest.json to the project root (not under bundle/)
-          if [ -f latest.json ]; then
-            cp latest.json "updater-${{ matrix.slug }}.json"
-          else
-            echo "Updater fragment not found after build (expected ./latest.json)"
-            find . -name 'latest.json' 2>/dev/null || true
-            exit 1
-          fi
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: updater-${{ matrix.slug }}
-          path: updater-${{ matrix.slug }}.json
-          if-no-files-found: error
 
       - name: Build MSIX
         if: matrix.platform == 'windows-latest'
@@ -273,26 +253,3 @@ jobs:
         run: |
           MSIX=$(ls src-tauri/target/release/bundle/msix/*.msix)
           gh release upload "${{ needs.release-notes.outputs.tag }}" "$MSIX" --clobber
-
-  publish-release:
-    needs: [build, release-notes]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: updater-*
-          path: updater-fragments
-          merge-multiple: true
-
-      - name: Merge updater JSON
-        run: node scripts/merge-updater-json.mjs updater-fragments merged-latest.json
-
-      - name: Consolidate release assets and publish
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
-        run: node scripts/consolidate-github-release.mjs "${{ needs.release-notes.outputs.tag }}" merged-latest.json
