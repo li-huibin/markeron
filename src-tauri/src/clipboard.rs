@@ -183,10 +183,13 @@ pub fn capture_region(x: i32, y: i32, width: i32, height: i32) -> Result<String,
         let monitor_x = monitor.x().map_err(|e| format!("{}", e))?;
         let monitor_y = monitor.y().map_err(|e| format!("{}", e))?;
 
+        let monitor_w = monitor.width().map_err(|e| format!("{}", e))? as i32;
+        let monitor_h = monitor.height().map_err(|e| format!("{}", e))? as i32;
+
         if x < monitor_x
             || y < monitor_y
-            || x + width > monitor_x + monitor.width().map_err(|e| format!("{}", e))?
-            || y + height > monitor_y + monitor.height().map_err(|e| format!("{}", e))?
+            || x + width > monitor_x + monitor_w
+            || y + height > monitor_y + monitor_h
         {
             return Err("Region out of monitor bounds".to_string());
         }
@@ -203,8 +206,7 @@ pub fn capture_region(x: i32, y: i32, width: i32, height: i32) -> Result<String,
             width as u32,
             height as u32,
         )
-        .to_image()
-        .to_rgba8();
+        .to_image();
 
         let mut cb = arboard::Clipboard::new().map_err(|e| format!("{}", e))?;
         cb.set_image(arboard::ImageData {
