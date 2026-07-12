@@ -1,9 +1,26 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { invoke } from '@tauri-apps/api/core'
-import { getCurrentWindow, LogicalSize, LogicalPosition } from '@tauri-apps/api/window'
 
-const appWindow = getCurrentWindow()
+const isBrowser = !('__TAURI_INTERNALS__' in window)
+let tauriWindow: any = null
+
+async function getTauriWindow() {
+  if (tauriWindow || isBrowser) return tauriWindow
+  const { getCurrentWindow } = await import('@tauri-apps/api/window')
+  tauriWindow = getCurrentWindow()
+  return tauriWindow
+}
+
+let LogicalSize: any = null
+let LogicalPosition: any = null
+
+async function loadTauriApi() {
+  if (isBrowser) return
+  const mod = await import('@tauri-apps/api/window')
+  LogicalSize = mod.LogicalSize
+  LogicalPosition = mod.LogicalPosition
+}
+loadTauriApi()
 
 const imageSrc = ref<string>('')
 const isDragging = ref(false)
@@ -11,6 +28,29 @@ const dragStartX = ref(0)
 const dragStartY = ref(0)
 const dragWindowStartX = ref(0)
 const dragWindowStartY = ref(0)
+const windowOffsetX = ref(0)
+const windowOffsetY = ref(0)
+
+function generateDemoImage(): string {
+  const canvas = document.createElement('canvas')
+  canvas.width = 600
+  canvas.height = 400
+  const ctx = canvas.getContext('2d')!
+  const gradient = ctx.createLinearGradient(0, 0, 600, 400)
+  gradient.addColorStop(0, '#667eea')
+  gradient.addColorStop(1, '#764ba2')
+  ctx.fillStyle = gradient
+  ctx.fillRect(0, 0, 600, 400)
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.95)'
+  ctx.font = 'bold 32px sans-serif'
+  ctx.textAlign = 'center'
+  ctx.fillText('截图预览', 300, 180)
+  ctx.font = '16px sans-serif'
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.8)'
+  ctx.fillText('拖动标题栏可移动窗口', 300, 230)
+  ctx.fillText('点击右上角可关闭窗口', 300, 260)
+  return canvas.toDataURL('image/png')
+}
 
 function parsePinIdFromHash(): number | null {
   const match = window.location.hash.match(/^#pinned-image\/(\d+)/)
@@ -18,6 +58,12 @@ function parsePinIdFromHash(): number | null {
 }
 
 async function loadImage() {
+  if (isBrowser) {
+    imageSrc.value = generateDemoImage()
+    return
+  }
+
+  const { invoke } = await import('@tauri-apps/api/core')
   const id = parsePinIdFromHash()
   if (id === null) return
 
@@ -27,7 +73,7 @@ async function loadImage() {
       imageSrc.value = data
 
       const img = new Image()
-      img.onload = () => {
+      img.onload = async () => {
         const maxWidth = 600
         const maxHeight = 450
         let w = img.width
@@ -42,7 +88,8 @@ async function loadImage() {
           h = maxHeight
           w = w * ratio
         }
-        appWindow.setSize(new LogicalSize(Math.round(w), Math.round(h) + 32))
+        const win = await getTauriWindow()
+        win.setSize(new LogicalSize(Math.round(w), Math.round(h) + 32))
       }
       img.src = data
     }
@@ -53,16 +100,27 @@ async function onDragStart(e: MouseEvent) {
   isDragging.value = true
   dragStartX.value = e.clientX
   dragStartY.value = e.clientY
-  const pos = await appWindow.innerPosition()
-  dragWindowStartX.value = pos.x
-  dragWindowStartY.value = pos.y
+  if (isBrowser) {
+    dragWindowStartX.value = windowOffsetX.value
+    dragWindowStartY.value = windowOffsetY.value
+  } else {
+    const win = await getTauriWindow()
+    const pos = await win.innerPosition()
+    dragWindowStartX.value = pos.x
+    dragWindowStartY.value = pos.y
+  }
 }
 
 function onDragMove(e: MouseEvent) {
   if (!isDragging.value) return
   const dx = e.clientX - dragStartX.value
   const dy = e.clientY - dragStartY.value
-  appWindow.setPosition(new LogicalPosition(dragWindowStartX.value + dx, dragWindowStartY.value + dy))
+  if (isBrowser) {
+    windowOffsetX.value = dragWindowStartX.value + dx
+    windowOffsetY.value = dragWindowStartY.value + dy
+  } else if (LogicalPosition && tauriWindow) {
+    tauriWindow.setPosition(new LogicalPosition(dragWindowStartX.value + dx, dragWindowStartY.value + dy))
+  }
 }
 
 function onDragEnd() {
@@ -70,7 +128,12 @@ function onDragEnd() {
 }
 
 async function closeWindow() {
-  await appWindow.close()
+  if (isBrowser) {
+    imageSrc.value = ''
+    return
+  }
+  const win = await getTauriWindow()
+  win.close()
 }
 
 onMounted(() => {
@@ -81,7 +144,11 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="pinned-image-window">
+  <div
+    class="pinned-image-window"
+    :class="{ 'browser-mode': isBrowser }"
+    :style="isBrowser ? `transform: translate(${windowOffsetX}px, ${windowOffsetY}px)` : ''"
+  >
     <div class="pinned-image-header" @mousedown="onDragStart">
       <span class="pinned-image-title">截图</span>
       <button class="pinned-image-close" @click="closeWindow">
@@ -118,6 +185,14 @@ onMounted(() => {
   overflow: hidden;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
   user-select: none;
+}
+
+.pinned-image-window.browser-mode {
+  width: 600px;
+  height: 432px;
+  position: absolute;
+  top: 80px;
+  left: 80px;
 }
 
 .pinned-image-header {
